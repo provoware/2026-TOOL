@@ -62,6 +62,7 @@ class ApiContractTests(unittest.TestCase):
         )
         self.assertEqual(status, 201)
         self.assertTrue(payload["project"]["available"])
+        return Path(payload["project"]["path"])
 
     def test_todo_calendar_archive_restore_contract(self):
         self.create_project()
@@ -106,10 +107,49 @@ class ApiContractTests(unittest.TestCase):
         self.create_project()
         status, payload = self.request("/api/todos", "POST", {"title": "Ungültig", "due_time": "12:00"})
         self.assertEqual(status, 400)
+        self.assertEqual(payload["code"], "VALIDATION")
         self.assertIn("Datum", payload["error"])
         status, active = self.request("/api/todos?scope=all")
         self.assertEqual(status, 200)
         self.assertEqual(active["items"], [])
+
+    def test_self_repair_status_is_read_only_and_run_repairs_missing_standard_dir(self):
+        project = self.create_project()
+        cache = project / "cache"
+        cache.rmdir()
+
+        status, diagnosis = self.request("/api/self-repair/status")
+        self.assertEqual(status, 200)
+        self.assertEqual(diagnosis["status"], "warning")
+        self.assertFalse(cache.exists(), "Diagnose-Endpunkt darf nichts verändern")
+        self.assertTrue(any(item["code"] == "PROJECT_DIR_MISSING" for item in diagnosis["events"]))
+
+        status, repaired = self.request("/api/self-repair/run", "POST", {})
+        self.assertEqual(status, 200)
+        self.assertEqual(repaired["status"], "repaired")
+        self.assertTrue(cache.is_dir())
+        self.assertTrue(any(item["code"] == "PROJECT_DIR_RECREATED" for item in repaired["events"]))
+
+        status, diagnosis = self.request("/api/self-repair/status")
+        self.assertEqual(status, 200)
+        self.assertFalse(diagnosis["blocking"])
+        self.assertNotEqual(diagnosis["status"], "warning")
+
+    def test_invalid_project_marker_is_reported_and_not_repaired(self):
+        project = self.create_project()
+        marker = project / ".provoware" / "project.json"
+        marker.write_text("{kaputt", encoding="utf-8")
+
+        status, diagnosis = self.request("/api/self-repair/status")
+        self.assertEqual(status, 200)
+        self.assertTrue(diagnosis["blocking"])
+        self.assertTrue(any(item["code"] == "PROJECT_MARKER_INVALID" for item in diagnosis["events"]))
+
+        before = marker.read_text(encoding="utf-8")
+        status, repaired = self.request("/api/self-repair/run", "POST", {})
+        self.assertEqual(status, 503)
+        self.assertTrue(repaired["blocking"])
+        self.assertEqual(marker.read_text(encoding="utf-8"), before)
 
 
 if __name__ == "__main__":

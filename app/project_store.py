@@ -96,11 +96,20 @@ class ProjectStore:
         valid, _ = SelfRepairCoordinator.valid_project_marker(path)
         return valid
 
+    def configured_project_path(self) -> Path | None:
+        active = self.config.get("active_project")
+        if not isinstance(active, dict):
+            return None
+        raw = active.get("path")
+        if not isinstance(raw, str) or not raw.strip():
+            return None
+        return Path(raw).expanduser().resolve(strict=False)
+
     def bootstrap(self) -> dict:
         active = self.config.get("active_project")
-        project_status = {"configured": False, "available": False, "path": None, "name": None}
-        if isinstance(active, dict) and active.get("path"):
-            path = Path(active["path"]).expanduser().resolve(strict=False)
+        project_status = {"configured": False, "available": False, "path": None, "name": None, "marker_valid": False}
+        path = self.configured_project_path()
+        if path is not None:
             marker_valid = self._project_marker_valid(path)
             project_status = {
                 "configured": True,
@@ -115,10 +124,10 @@ class ProjectStore:
         }
 
     def active_project_path(self) -> Path | None:
-        project = self.bootstrap()["project"]
-        if not project["available"] or not project["path"]:
+        path = self.configured_project_path()
+        if path is None or not path.is_dir() or not self._project_marker_valid(path):
             return None
-        return Path(project["path"]).resolve(strict=False)
+        return path
 
     def create_project(self, base_path: str, name: str) -> dict:
         project_name = sanitize_project_name(name)

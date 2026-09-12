@@ -1,9 +1,9 @@
 # Changelog
 
-## 0.4.0 – in Entwicklung – Read-only Sortier-Analyse & Vorschau
+## 0.4.0 – 2026-09-12 – Read-only Sortier-Analyse & Vorschau
 ### Sicherheitsarchitektur
-- neue Iteration beginnt ausdrücklich read-only gegenüber Nutzdateien.
-- kein copy, move, rename oder delete im Scanner-Scope.
+- neuer Dateien-Workflow bleibt ausdrücklich read-only gegenüber Nutzdateien.
+- kein copy, move, rename oder delete im v0.4.0-Scanner-Scope.
 - Quellwurzel-Symlinks werden blockiert; Symlinks innerhalb des Scans werden nicht verfolgt und mit Grund als übersprungen protokolliert.
 - rekursiver Scan ist standardmäßig aus; versteckte sowie bekannte System-/Cachebereiche sind standardmäßig aus.
 
@@ -16,6 +16,20 @@
 - höhere Priorität gewinnt; gleich priorisierte Gewinner mit unterschiedlichen Zielgruppen werden als `conflict` markiert statt automatisch entschieden.
 - alle Regeltreffer bleiben in der Vorschau nachvollziehbar.
 
+### API / Worker
+- localhost-only API für grafische Quellordnerwahl, asynchronen Scanstart, Summary, Paging und Scansteuerung.
+- Scanstart liefert sofort einen Job zurück; der HTTP-Server bleibt während der Analyse ansprechbar.
+- Pause, Weiter und Abbruch verwenden die bestehende Job-Zustandsmaschine.
+- Resume eines Sortierjobs startet nachweislich wieder einen echten Scanner-Worker und darf nicht nur den Datenbankstatus ändern.
+
+### Oberfläche
+- Dateien-Modul wird lazy-loaded und belastet den normalen Programmstart nicht unnötig.
+- laienverständlicher Vier-Schritt-Workflow: Quellordner wählen → Regeln auswählen → nur analysieren → Ergebnis prüfen.
+- vorbereitete Standardgruppen sowie optionale Wortregeln per Auswahlfeldern und Schaltflächen; keine Regelsyntax im Laienmodus.
+- Summary-Karten für Dateien, Volumen, zugeordnet, Konflikte, nicht zugeordnet und übersprungen.
+- Filter, Paging und klare Konflikt-/Überspringgründe für große Ergebnislisten.
+- globale Prozessanzeige zeigt Scanfortschritt und Status; Farbe wird nicht als einzige Information verwendet.
+
 ### Robustheit
 - verschwundene oder nicht lesbare Einträge werden mit Klartextgrund übersprungen; der übrige Scan kann fortgesetzt werden.
 - Scanergebnisse werden in Batches persistiert und über vorhandene Job-Checkpoints abgesichert.
@@ -23,10 +37,12 @@
 
 ### Qualität
 - verbindlicher R3-Plan `docs/iterationen/ITERATION_04_SORTER_PREVIEW_PLAN.md` wurde vor Implementierung angelegt.
-- neuer Vertragstest `tests/test_sorter_preview.py` für Schema/Backup, Rekursion, Symlinks, Skip-Gründe, Kategorien, Regelpriorität, Konflikte, Paging und Nicht-Veränderung der Quelle.
+- `tests/test_sorter_preview.py` prüft Schema/Backup, Rekursion, Symlinks, Skip-Gründe, Kategorien, Regelpriorität, Konflikte, Paging und Nicht-Veränderung der Quelle.
+- API-Regression prüft asynchronen Sortierstart, Paging, Root-Symlink-Blockierung und echten Resume-Worker.
+- UX-Regression prüft read-only Wortlaut, sichere Defaults, Lazy-Loading, Konflikt-/Skip-Anzeige und das Fehlen einer Executor-Schnittstelle.
 - `sorter_preview.py` ist im Agent-Risikogate ausdrücklich R3.
-- Release-Gate erhält eine eigene sichtbare Sortier-Vorschau-Stufe.
-- API- und UI-Anbindung sind noch offen; v0.4.0 ist daher noch nicht freigegeben.
+- Release-Gate besitzt eine eigene sichtbare Sortier-Vorschau-Stufe.
+- vollständig integrierter Implementierungsstand erreichte vor der Versionspromotion 76 grüne automatische Tests; der v0.4.0-Release-Head muss denselben vollständigen Prüfpfad erneut bestehen.
 
 ## 0.3.0 – 2026-09-12 – Jobmanager & reversibles Aktionsjournal
 ### Datenkern / Migration

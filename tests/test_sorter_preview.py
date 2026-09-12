@@ -166,8 +166,11 @@ class SorterPreviewTests(unittest.TestCase):
             def __init__(self, entry):
                 self.entry = entry
 
-            def __enter__(self):
+            def __iter__(self):
                 return iter([self.entry])
+
+            def __enter__(self):
+                return self
 
             def __exit__(self, exc_type, exc, tb):
                 return False

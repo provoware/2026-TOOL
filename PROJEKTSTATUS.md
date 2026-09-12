@@ -1,43 +1,31 @@
 # Projektstatus
 
-## Version
-0.2.1 – Iteration 2.1 „Reliability & Self-Repair“
+## Basis
+🟢 v0.2.1 – Reliability & Self-Repair ist über PR #4 nach `main` gemergt.
 
-## Status
-🟡 Release Candidate – Implementierung und Regressionserweiterung abgeschlossen; finale GitHub-PR-Gates und anschließende `main`-Nachvalidierung stehen noch aus.
+## Aktuelle Entwicklung
+🔵 Iteration 2.2 – UX, Feedback & Transparenz
 
-## Neue Schutzebenen
-- konservative Self-Repair-Schicht mit expliziter Allowlist/Denylist
-- verifizierte Konfigurations-Recovery mit Quarantäne
-- strikte Projektmarker- und Projektstrukturprüfung
-- Symlink-Schutz für Projektmarker und Standardordner
-- stabilere atomare JSON-Persistenz mit `fsync`
-- stabile lokale API-Fehlercodes ohne Offenlegung interner Stacktraces
-- Diagnose-Endpunkt ohne Änderungen und separater freigegebener Reparaturlauf
-- grafische rote Kennzeichnung blockierender, nicht sicher reparierbarer Zustände
+Geplanter nächster Release: **v0.2.2**. Die Versionsnummer wird erst nach bestandener Kandidatenprüfung in Laufzeit und Manifest promoviert.
 
-## Agentenmodell v2
-- Analyse-Agent
-- Risiko-Agent R0–R4
-- Fehlerursachen-Agent
-- Plan-Agent
-- Regressions-Agent
-- Plan-Prüfer
-- Release-Prüfer
+## Bereits implementiert im Kandidaten
+- zentrale Prozess-/Feedbackschicht,
+- permanente Prozessleiste mit stabilem Platz,
+- Warnungs-/Fehlerzähler,
+- ARIA-Live-Rückmeldungen mit Symbol + Text,
+- Busy-/Doppelausführungsschutz für wichtige Nutzeraktionen,
+- Zoom 100–200 % inklusive Tastatur und Strg+Mausrad,
+- Skip-Link und größere Standard-Aktionsziele,
+- verbesserte leere Zustände und verständlichere Fehlermeldungen,
+- Self-Repair, Projektanlage, Schnellspeicher und Todo an gemeinsames Feedback angebunden,
+- verbindlicher UX-Standard und automatische UX-Vertragstests,
+- separates sichtbares UX-Gate in GitHub Actions.
 
-Alle Prüfrollen bleiben read-only gegenüber Produktivcode. R4 ist standardmäßig blockiert.
+## Sicherheitsstatus
+- keine destruktive neue Fachfunktion,
+- Self-Repair-Denylist unverändert aktiv,
+- Datenkern/Crash/Recovery bleiben Teil der Gesamtregression,
+- Nutzer-Abnahme ist nicht als Releasevoraussetzung vorgesehen.
 
-## Automatische Prüfbasis
-- bestehende SQLite-WAL-/Transaktions-/Crash-/Recovery-Regression bleibt erhalten
-- Self-Repair-Regression für Konfigurationsrestore, Quarantäne, Fremdordner, fehlende Standardordner, Kollisionen und Symlinks ergänzt
-- API-Vertrag um Self-Repair-Status und sicheren Reparaturlauf erweitert
-- Shell-Regression um Projektmarker-/Self-Repair-Verträge ergänzt
-- Agent-Gate-Risikoklassifikation erhält eigene Regressionstests
-- `validate_agents.py` prüft Rollenverträge maschinenlesbar
-- vollständiges `validate_all.sh` bleibt zwingendes Release-Gate
-
-## Freigaberegel
-Dieser RC darf erst nach erfolgreichem Pull-Request-Release-Gate sowie allen sieben Subagent-Gates auf `main` übernommen werden. Danach müssen dieselben Gates auf dem gemergten `main`-Commit erneut erfolgreich sein und die Zwei-Versionen-Backuprotation muss bestätigt werden.
-
-## Nutzer-Abnahme
-Nicht erforderlich. Fehlende automatische Evidenz darf nicht durch manuelles Nutzertesten ersetzt werden.
+## Freigabestatus
+🟡 Kandidat – vollständiges Release-/Agenten-Gate für Iteration 2.2 steht noch aus.

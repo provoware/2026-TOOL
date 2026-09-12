@@ -8,40 +8,42 @@
 - [x] Projekt-Ersteinrichtung und Standardordner
 - [x] integrierte Hilfe
 - [x] zwei Vorgänger-Backups
-- [x] Analyse-, Plan- und Plan-Prüfer-Rollen
-- [x] Manifest- und Release-Gate-Grundlage
+- [x] Agenten- und Release-Gate-Grundlage
 
 ## 🟢 Iteration 2 – Datenkern v0.2.0
-1. [x] SQLite-Service mit WAL, Foreign Keys, Busy Timeout und Schema-Version.
-2. [x] transaktionale Schreiblogik und Rollbacktests.
-3. [x] Todo D mit optionaler Terminierung, Priorität, Archiv und Wiederherstellung.
-4. [x] Kalender E aus derselben Todo-Datenquelle, keine Doppelhaltung.
-5. [x] verifizierte DB-Sicherungen, Quarantäne und Recovery.
-6. [x] Restart-/Persistenz-, Crash- und Korruptions-Regression.
-7. [x] HTTP-API-Vertragstest.
-8. [x] Expert-Shell-Regression beibehalten.
-9. [x] Datenstandard, Manifest, Hilfe, Architektur und Changelog aktualisieren.
-10. [x] vollständigen Iterationsdiff durch unabhängiges GitHub-Release-Gate prüfen.
-11. [x] Analyse-, Plan- und Plan-Prüfer-Gates für den vollständigen Diff bestanden.
+- [x] SQLite WAL/Transaktionen, Todo, Archiv, Kalender, Recovery und API-Regression
 
-## 🔵 Iteration 2.1 – Reliability & Self-Repair v0.2.1
-1. [ ] AGENTS.md v2 mit Risikoklassen, Trigger-Matrix, Self-Repair-Grenzen und Freigaberegeln.
-2. [ ] Analyse-, Risiko-, Fehlerursachen-, Plan-, Regressions-, Plan-Prüfer- und Release-Prüfer-Rollen sauber trennen.
-3. [ ] maschinenlesbare Agentenvertragsprüfung statt einfacher Text-Greps.
-4. [ ] zentrale sichere Self-Repair-Schicht mit Allowlist/Denylist.
-5. [ ] beschädigte Konfiguration nur aus verifizierter `.bak1`/`.bak2` restaurieren und Original quarantänisieren.
-6. [ ] Projektmarker strikt validieren; fremde/ungültige Projektordner niemals automatisch übernehmen.
-7. [ ] fehlende Standardordner nur in validierten PROVOWARE-Projekten selbst reparieren.
-8. [ ] SQLite-Recovery über bestehenden verifizierenden Datenkern integrieren.
-9. [ ] Self-Repair-Status/Run als lokale API und Startprüfung integrieren.
-10. [ ] Regressionstests für Konfig-Recovery, Kollisionen, Fremdordnerschutz, Quarantäne, API und Agentenverträge.
-11. [ ] Manifest, Hilfe, Architektur, Qualitätsdoku, Changelog und Projektstatus synchronisieren.
-12. [ ] vollständigen finalen Branch-Head und danach `main` automatisch validieren.
+## 🟢 Iteration 2.1 – Reliability & Self-Repair v0.2.1
+- [x] AGENTS.md v2 und R0–R4-Risikomodell
+- [x] sieben getrennte read-only Prüfrollen
+- [x] maschinenlesbare Agentenvertragsprüfung
+- [x] konservative Self-Repair-Allowlist/Denylist
+- [x] Config-Recovery + Quarantäne
+- [x] strikte Projektmarker-/Strukturprüfung
+- [x] Symlink-Schutz für Projektgrenzen
+- [x] SQLite-Recovery integriert
+- [x] Self-Repair-API und grafische Bedienung
+- [x] Self-Repair-/API-/Shell-/Agentenregression
+- [x] Release- und Subagent-Gates bestanden und nach `main` gemergt
 
-## Danach – nächste Fachausbaustufe
-- DB-Eingabemaske C als dynamisches Schema-/Formularsystem auf demselben Datenkern.
+## 🔵 Iteration 2.2 – UX, Feedback & Transparenz v0.2.2
+1. [ ] zentrales Feedback-/Prozessmodell statt verteilter Einzelmeldungen.
+2. [ ] globale Statusleiste: aktuelle Aktion, realer Fortschritt, Ergebnis.
+3. [ ] Standardzähler: OK / Hinweise / Fehler / übersprungen.
+4. [ ] Screenreader-Live-Region und unmittelbare Toast-Rückmeldung.
+5. [ ] Schriftregler auf 200 % erweitern und Kontrast+-Modus ergänzen.
+6. [ ] Busy/Disabled/Success/Warning/Error-Zustände vereinheitlichen.
+7. [ ] Laienführung „Nächster sinnvoller Schritt“ ergänzen.
+8. [ ] Diagnosebereich K übersichtlicher und transparenter machen.
+9. [ ] UX-Standard für Vorschau → Ausführung → Ergebnis → Undo/Recovery definieren.
+10. [ ] „übersprungen und warum“ als Pflichtvertrag für künftige Batchprozesse.
+11. [ ] UX-Vertragstests ergänzen; komplette bestehende Regression weiterführen.
+12. [ ] finalen Branch-Head und danach `main` automatisch validieren.
+
+## Danach – Fachausbaustufe
+- Download-/Dateiregeln: Ordner wählen → analysieren → Dateitypen → Regel per Auswahl → Konfliktprüfung → Vorschau → sicher kopieren/verschieben → Ergebnis/Undo.
+- DB-Eingabemaske C als dynamisches Schema-/Formularsystem.
 - globale Suche H über Todo, Notizen, Schnellspeicher und spätere DB-Inhalte.
-- Organisationsbereich F weiter ausbauen, ohne Statistikduplikate zu erzeugen.
 
 ## Qualitätsregel
-Vor Umsetzung zuerst Analyse und dokumentierter Plan. Umsetzung danach automatisch validieren; Plan-Prüfer kontrolliert Abweichungen. Nutzer ist Anwender und nicht reguläre Test- oder Abnahmeinstanz.
+Nutzer ist Anwender, nicht reguläre Testinstanz. Jede Aktion braucht sichtbares Feedback; jede riskante Aktion braucht Vorvalidierung, sichere Rückfallstrategie und automatische Regression.

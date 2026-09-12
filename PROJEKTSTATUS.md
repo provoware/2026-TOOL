@@ -1,30 +1,51 @@
 # Projektstatus
 
-## Version
-**v0.2.2 – UX, Feedback & Transparenz**
+## Produktlaufzeit
+**v0.2.2 – UX, Feedback & Transparenz** bleibt unverändert.
+
+## Release-Engineering
+**Hotfix v0.2.3 – Backup Reliability**
 
 ## Status
-🟢 Kandidatenprüfung bestanden; Version auf v0.2.2 promoviert. Finaler Promotions-Head wird vor Merge nochmals vollständig geprüft.
+🟡 Release Candidate – Root Cause des roten v0.2.2-Backupworkflows behoben; vollständige PR-Gates und anschließende reale `main`-Backupprüfung stehen noch aus.
 
-## UX / Laienbedienung
-- permanente globale Prozessanzeige mit reserviertem Platz,
-- echte Prozentwerte nur wenn messbar; sonst klarer Aktivitätszustand,
-- Warnungs-/Fehlerzähler,
-- wichtige ARIA-Live-Rückmeldungen mit Symbol + Klartext,
-- Busy-/Doppelausführungsschutz,
-- Zoom 100–200 % mit Regler, Tastatur und Strg+Mausrad,
-- Skip-Link und sichtbare Fokusführung,
-- größere Standard-Aktionsziele,
-- verständlichere Leer-, Fehler- und Ergebniszustände,
-- Projektanlage, Self-Repair, Schnellspeicher und Todo verwenden dasselbe Feedbackmodell.
+## Ausgangslage
+- v0.2.2 auf `main`: Release-Gate 🟢.
+- v0.2.2 auf `main`: siebenstufiges Subagent-Gate 🟢.
+- v0.2.2 auf `main`: bisheriger Zweig-Rotationsworkflow 🔴.
+- vorhandene Legacy-Rückfallstände selbst blieben korrekt auf v0.2.1 und v0.2.0.
 
-## Qualität
-- Kandidaten-Head `40c21ce7b9b2440872ce2d881d84fecc55d9d215` geprüft,
-- Release-Gate Run `34693108790`: 🟢 success,
-- siebenstufiges Subagent-Gate Run `34693108804`: 🟢 success,
-- 37 automatische Tests im Kandidatenstand: Shell 8, Datenkern 8, API 4, Self-Repair 8, Agenten 3, UX 6,
-- Datenkern-/Crash-/Recovery-Regression unverändert Bestandteil des Gates,
-- Nutzer-Abnahme: nicht erforderlich.
+## Bestätigte Root Cause
+Der alte Workflow versuchte `backup/previous-1` per `git push --force` auf einen historischen Hauptstand zu setzen. GitHub lehnte den Ref-Push ab, weil der historische Commit geänderte `.github/workflows/quality.yml` enthielt und der Actions-GitHub-App-Token keine spezielle Workflow-Schreibberechtigung besitzt. Dies ist ein Berechtigungs-/Strategieproblem der Zweigrotation, kein Datenbank- oder Nutzdatenfehler.
 
-## Noch vor Merge
-Der Promotions-Head mit Versionsnummer v0.2.2 muss dieselben Release-/Agenten-Gates nochmals bestehen. Danach Squash-Merge nach `main` und Post-Merge-Gate.
+## Hotfix
+- neuer technischer Zweig `backup/snapshots`.
+- Snapshot-Builder erzeugt zwei vollständige `git archive`-ZIPs der vorherigen `main`-Stände.
+- ZIPs enthalten auch Workflow-Dateien.
+- jedes ZIP wird vollständig gelesen/getestet und erhält SHA-256.
+- Manifest dokumentiert Commit-ID, SHA-256, Datei- und Größenwerte.
+- der Backupworkflow ändert auf `backup/snapshots` ausschließlich `version-backups/*`; Workflow-Dateien dieses Zweigs bleiben unverändert.
+- alter Zweigmechanismus bleibt nur als Legacy-Rückfallpunkt bestehen.
+
+## Automatische Regression
+- temporäres Git-Repo mit drei Ständen,
+- Workflow-Datei ändert sich zwischen den Vorgängern,
+- previous-1/previous-2 werden auf exakten Inhalt geprüft,
+- ZIP-Test und Manifest-SHA werden geprüft,
+- bestehende Shell-, UX-, Datenkern-, Crash-/Recovery-, Self-Repair-, API- und Agentenregression bleibt Bestandteil des Gesamt-Gates.
+
+## Agenten / Qualität
+AGENTS.md v2.1 klassifiziert Backup-/Release-Engineering als R3. Ein roter Backupworkflow muss künftig bis zum Job-Log analysiert und mit Root-Cause-Schutz behoben werden; kosmetisches Ignorieren ist ausgeschlossen.
+
+## Offene externe Schutzlücke
+`main` ist auf Repositoryebene weiterhin nicht durch Branch-Protection/Ruleset geschützt. Dies ist separat in `docs/OFFENE_RISIKEN.md` dokumentiert und kann nicht durch grüne CI allein ersetzt werden.
+
+## Freigaberegel
+1. finaler Hotfix-Head durch Release-Gate und alle sieben Subagent-Gates.
+2. Merge nach `main`.
+3. Release-/Subagent-Gates auf dem gemergten Stand erneut grün.
+4. neuer Backupworkflow auf `main` grün.
+5. tatsächliche `previous-1.zip`, `previous-2.zip` und `manifest.json` auf `backup/snapshots` nachprüfen.
+
+## Nutzer-Abnahme
+Nicht erforderlich. Automatische Evidenz wird nicht durch manuelles Nutzertesten ersetzt.

@@ -31,6 +31,7 @@ from data_core import DataCore, DataIntegrityError, DataNotFoundError, DataValid
 from job_manager import JobManager
 from project_store import PROJECT_DIRS, ProjectStore, load_json
 from self_repair import RepairReport, SelfRepairCoordinator
+from sorter_preview import SorterPreviewService
 
 
 def _config_dir() -> Path:
@@ -55,6 +56,10 @@ class AppContext:
         self._data: DataCore | None = None
         self._jobs_path: Path | None = None
         self._jobs: JobManager | None = None
+        self._sorter_path: Path | None = None
+        self._sorter: SorterPreviewService | None = None
+        self._scan_threads: dict[str, threading.Thread] = {}
+        self._scan_threads_lock = threading.RLock()
         self._watchdog_stop = threading.Event()
 
         configured_path = self.store.configured_project_path()
@@ -154,8 +159,86 @@ class AppContext:
                 self._jobs_path = project_path
             return self._jobs
 
+    def sorter_preview(self) -> SorterPreviewService:
+        project_path = self.store.active_project_path()
+        if project_path is None:
+            raise RuntimeError("Kein verfügbares Projekt eingerichtet.")
+        with self._service_lock:
+            if self._sorter is None or self._sorter_path != project_path:
+                self._sorter = SorterPreviewService(self.data_core(), self.job_manager())
+                self._sorter_path = project_path
+            return self._sorter
+
+    def _scan_worker(self, job_id: str) -> None:
+        try:
+            result = self.sorter_preview().run_scan(job_id)
+            self.logger.info(
+                "Sortier-Analyse beendet: job=%s status=%s",
+                job_id,
+                result.get("status", "unknown"),
+            )
+        except Exception:
+            self.logger.exception("Sortier-Analyse-Worker fehlgeschlagen: job=%s", job_id)
+        finally:
+            with self._scan_threads_lock:
+                current = self._scan_threads.get(job_id)
+                if current is threading.current_thread():
+                    self._scan_threads.pop(job_id, None)
+
+    def _launch_scan_worker(self, job_id: str) -> dict:
+        job = self.job_manager().get_job(job_id)
+        if job["kind"] != "sort-preview-scan":
+            raise DataValidationError("Job gehört nicht zur Sortier-Vorschau.")
+        if job["status"] not in {"queued", "running", "interrupted"}:
+            raise DataValidationError("Sortier-Analyse kann in diesem Jobzustand nicht gestartet werden.")
+        with self._scan_threads_lock:
+            existing = self._scan_threads.get(job_id)
+            if existing is not None and existing.is_alive():
+                return job
+            worker = threading.Thread(
+                target=self._scan_worker,
+                args=(job_id,),
+                name=f"provoware-sort-scan-{job_id[:8]}",
+                daemon=True,
+            )
+            self._scan_threads[job_id] = worker
+            worker.start()
+        return self.job_manager().get_job(job_id)
+
+    def create_sort_scan(
+        self,
+        source_path: str,
+        *,
+        rules: object | None = None,
+        recursive: bool = False,
+        include_hidden: bool = False,
+    ) -> dict:
+        job = self.sorter_preview().create_scan_job(
+            source_path,
+            rules=rules,
+            recursive=recursive,
+            include_hidden=include_hidden,
+        )
+        self._launch_scan_worker(job["id"])
+        return self.job_manager().get_job(job["id"])
+
+    def resume_sort_scan(self, job_id: str) -> dict:
+        job = self.job_manager().get_job(job_id)
+        if job["kind"] != "sort-preview-scan":
+            raise DataValidationError("Job gehört nicht zur Sortier-Vorschau.")
+        resumed = self.job_manager().resume_job(job_id)
+        self._launch_scan_worker(job_id)
+        return resumed
+
+    def active_scan_worker(self, job_id: str) -> bool:
+        with self._scan_threads_lock:
+            worker = self._scan_threads.get(job_id)
+            return bool(worker and worker.is_alive())
+
     def invalidate_project_services(self) -> None:
         with self._service_lock:
+            self._sorter = None
+            self._sorter_path = None
             self._jobs = None
             self._jobs_path = None
             self._data = None
@@ -192,6 +275,11 @@ class AppContext:
                     interrupted = self._jobs.recover_incomplete_jobs("clean-shutdown")
                     if interrupted:
                         self.logger.info("%d aktive Job(s) für Resume als interrupted gespeichert", len(interrupted))
+            with self._scan_threads_lock:
+                workers = list(self._scan_threads.values())
+            for worker in workers:
+                worker.join(timeout=2)
+            with self._service_lock:
                 if self._data is not None and self._data.db_path.exists():
                     try:
                         self._data.create_verified_backup("clean")
@@ -238,6 +326,9 @@ class Handler(BaseHTTPRequestHandler):
     def _jobs(self) -> JobManager:
         return self.app.job_manager()
 
+    def _sorter(self) -> SorterPreviewService:
+        return self.app.sorter_preview()
+
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
         path = parsed.path
@@ -257,7 +348,12 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(status, manifest or {"error": "Manifest fehlt oder ist ungültig.", "code": "MANIFEST"})
                 return
             if path == "/api/project/pick-base":
-                self._pick_project_base()
+                self._pick_directory(Path.home(), fallback=Path.home())
+                return
+            if path == "/api/sorter/pick-source":
+                downloads = Path.home() / "Downloads"
+                start = downloads if downloads.is_dir() else Path.home()
+                self._pick_directory(start, fallback=start)
                 return
             if path == "/api/self-repair/status":
                 self._json(HTTPStatus.OK, self.app.diagnose_self_repair().as_dict())
@@ -283,6 +379,33 @@ class Handler(BaseHTTPRequestHandler):
                 return
             if path == "/api/jobs/summary":
                 self._json(HTTPStatus.OK, self._jobs().summary())
+                return
+            if path == "/api/sorter/status":
+                self._json(HTTPStatus.OK, self._sorter().feature_status())
+                return
+            sort_match = re.fullmatch(r"/api/sorter/([0-9a-f]{32})/(summary|preview)", path)
+            if sort_match:
+                job_id, detail = sort_match.groups()
+                if detail == "summary":
+                    payload = self._sorter().scan_summary(job_id)
+                    payload["job"] = self._jobs().get_job(job_id)
+                    payload["worker_active"] = self.app.active_scan_worker(job_id)
+                    self._json(HTTPStatus.OK, payload)
+                else:
+                    offset = int(query.get("offset", [0])[0])
+                    limit = int(query.get("limit", [100])[0])
+                    decision = query.get("decision", [None])[0]
+                    category = query.get("category", [None])[0]
+                    self._json(
+                        HTTPStatus.OK,
+                        self._sorter().preview(
+                            job_id,
+                            offset=offset,
+                            limit=limit,
+                            decision=decision,
+                            category=category,
+                        ),
+                    )
                 return
             match = re.fullmatch(r"/api/jobs/([0-9a-f]{32})(?:/(events|actions|undo-candidates))?", path)
             if match:
@@ -348,6 +471,29 @@ class Handler(BaseHTTPRequestHandler):
                 )
                 self._json(HTTPStatus.OK, {"todo": item})
                 return
+            if path == "/api/sorter/scans":
+                item = self.app.create_sort_scan(
+                    str(data.get("source_path", "")),
+                    rules=data.get("rules") if "rules" in data else [],
+                    recursive=bool(data.get("recursive", False)),
+                    include_hidden=bool(data.get("include_hidden", False)),
+                )
+                self._json(HTTPStatus.ACCEPTED, {"job": item, "read_only": True})
+                return
+            sort_control = re.fullmatch(r"/api/sorter/([0-9a-f]{32})/(pause|resume|cancel)", path)
+            if sort_control:
+                job_id, action = sort_control.groups()
+                job = self._jobs().get_job(job_id)
+                if job["kind"] != "sort-preview-scan":
+                    raise DataValidationError("Job gehört nicht zur Sortier-Vorschau.")
+                if action == "pause":
+                    item = self._jobs().request_pause(job_id)
+                elif action == "resume":
+                    item = self.app.resume_sort_scan(job_id)
+                else:
+                    item = self._jobs().request_cancel(job_id)
+                self._json(HTTPStatus.OK, {"job": item})
+                return
             if path == "/api/jobs":
                 item = self._jobs().create_job(
                     str(data.get("kind", "")),
@@ -361,7 +507,11 @@ class Handler(BaseHTTPRequestHandler):
                 if action == "pause":
                     item = self._jobs().request_pause(job_id)
                 elif action == "resume":
-                    item = self._jobs().resume_job(job_id)
+                    current = self._jobs().get_job(job_id)
+                    if current["kind"] == "sort-preview-scan":
+                        item = self.app.resume_sort_scan(job_id)
+                    else:
+                        item = self._jobs().resume_job(job_id)
                 else:
                     item = self._jobs().request_cancel(job_id)
                 self._json(HTTPStatus.OK, {"job": item})
@@ -370,17 +520,17 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as exc:
             self._handle_api_exception(exc)
 
-    def _pick_project_base(self) -> None:
+    def _pick_directory(self, start: Path, *, fallback: Path) -> None:
         picker = shutil.which("kdialog")
         if not picker:
             self._json(
                 HTTPStatus.NOT_IMPLEMENTED,
-                {"error": "KDialog ist nicht verfügbar.", "fallback": str(Path.home()), "code": "PICKER-UNAVAILABLE"},
+                {"error": "KDialog ist nicht verfügbar.", "fallback": str(fallback), "code": "PICKER-UNAVAILABLE"},
             )
             return
         try:
             result = subprocess.run(
-                [picker, "--getexistingdirectory", str(Path.home())],
+                [picker, "--getexistingdirectory", str(start)],
                 check=False,
                 text=True,
                 capture_output=True,

@@ -19,8 +19,12 @@ R3_PATHS = (
     "AGENTS.md",
     ".agents/",
 )
-R2_PREFIXES = ("app/", "scripts/")
 R1_PREFIXES = ("app/static/",)
+R2_PREFIXES = ("app/", "scripts/")
+PROTECTED_DELETE_PATHS = (
+    "app/", "scripts/", "tests/", ".github/", ".agents/",
+    "AGENTS.md", "projekt-manifest.json",
+)
 AGENT_PATHS = ("AGENTS.md", ".agents/", ".github/workflows/agents.yml", "scripts/agent_gate.py", "scripts/validate_agents.py")
 
 
@@ -54,18 +58,20 @@ def risk_level(files: list[str], removed: list[str]) -> tuple[str, list[str]]:
     reasons: list[str] = []
     level = "R0"
     for path in files:
-        if _matches(path, R1_PREFIXES) and RISK_ORDER[level] < 1:
-            level = "R1"
+        if _matches(path, R1_PREFIXES):
+            if RISK_ORDER[level] < 1:
+                level = "R1"
             reasons.append("Darstellung/UI")
-        if _matches(path, R2_PREFIXES) and RISK_ORDER[level] < 2:
-            level = "R2"
+        elif _matches(path, R2_PREFIXES):
+            if RISK_ORDER[level] < 2:
+                level = "R2"
             reasons.append("Fachlogik/API")
         if _matches(path, R3_PATHS):
             level = "R3"
             reasons.append(f"Kern-/Qualitätsgrenze: {path}")
-    if any(path.startswith(("app/", "scripts/", ".github/")) for path in removed):
+    if any(_matches(path, PROTECTED_DELETE_PATHS) for path in removed):
         level = "R4"
-        reasons.append("Produktiv-/Qualitätsdatei gelöscht")
+        reasons.append("Produktiv-, Test- oder Qualitätsvertrag gelöscht")
     return level, reasons
 
 

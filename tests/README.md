@@ -1,5 +1,15 @@
-# Teststrategie
+# Automatische Tests
 
-Iteration 1 nutzt ausschließlich Python-Standardbibliothek und statische Konsistenztests. Geprüft werden Manifest, A–N, Themes, Hilfe, sichere Projekterstellung, Fremdordnerschutz und append-only Schnellspeicher.
+Der Nutzer ist nicht die Testinstanz. Jede freizugebende Version muss maschinell geprüft werden.
 
-Ab Iteration 2 kommen SQLite-Transaktions-, Restart-, Migrations- und Recoverytests hinzu. UI-End-to-End-Tests werden erst ergänzt, wenn ihr zusätzlicher Nutzen die Abhängigkeit rechtfertigt.
+## Testgruppen
+
+- `test_shell.py` – A–N-Shell, Themes, Manifest, Projektisolation, Schnellspeicher und Hilfe.
+- `test_data_core.py` – SQLite WAL/Schema, Transaktionen, Todo-Archiv/Restore, Kalenderprojektion, Restart/Persistenz, Prozessabsturz, Recovery und Backup-Retention.
+- `test_api_contract.py` – realer localhost-HTTP-Vertrag für Projektanlage, Todo, Archiv, Kalender, Restore und Eingabevalidierung.
+
+## Release-Gate
+
+`scripts/validate_all.sh` prüft Struktur, Manifest, Python- und JavaScript-Syntax, alle Regressionstests und Agentenrollen. Eine Version wird nicht freigegeben, wenn ein Kerncheck fehlschlägt.
+
+Jeder bestätigte Fehler hinterlässt mindestens einen Regressionstest, eine zusätzliche Validierung oder eine Architekturverbesserung, die seine Fehlerklasse künftig verhindert.

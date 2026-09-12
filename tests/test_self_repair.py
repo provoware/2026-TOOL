@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import tempfile
 import unittest
@@ -122,6 +123,25 @@ class SelfRepairTests(unittest.TestCase):
             report = repair.repair_project(project, _FakeCore)
             self.assertTrue(report.blocking)
             self.assertEqual(collision.read_text(encoding="utf-8"), "nutzerdaten")
+            self.assertTrue(any(event.code == "PROJECT_PATH_COLLISION" for event in report.events))
+
+    @unittest.skipUnless(hasattr(os, "symlink"), "Symlinks nicht verfügbar")
+    def test_symlink_standard_directory_is_blocked_and_target_untouched(self):
+        with tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            project = root / "project"
+            outside = root / "outside"
+            project.mkdir()
+            outside.mkdir()
+            valid_marker(project)
+            (project / "datenbanken").symlink_to(outside, target_is_directory=True)
+            sentinel = outside / "fremd.txt"
+            sentinel.write_text("extern", encoding="utf-8")
+            repair = SelfRepairCoordinator(root / "config", PROJECT_DIRS)
+            report = repair.repair_project(project, _FakeCore)
+            self.assertTrue(report.blocking)
+            self.assertEqual(sentinel.read_text(encoding="utf-8"), "extern")
+            self.assertTrue((project / "datenbanken").is_symlink())
             self.assertTrue(any(event.code == "PROJECT_PATH_COLLISION" for event in report.events))
 
     def test_diagnose_is_read_only(self):

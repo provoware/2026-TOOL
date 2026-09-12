@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "strategy": "verified-git-archive-zip",
+  "source": "main-first-parent-history",
+  "generated_at": "2026-09-12T12:43:58.336685+00:00",
+  "slots": [
+    {
+      "commit": "217fb9f748207f23d474043d78f16e018380bef7",
+      "file": "previous-1.zip",
+      "sha256": "35db10f42c1a5c1d75ba3379896c6184b574648091fdd2885ee05f97386015f9",
+      "zip_bytes": 102640,
+      "files": 62,
+      "unpacked_bytes": 253464,
+      "slot": "previous-1"
+    },
+    {
+      "commit": "b5393392dd62c547a9cce832f35a1101a1509dac",
+      "file": "previous-2.zip",
+      "sha256": "9e8b7047313b3b702e57c7b8619a74c321a5e3c779f44b7aeca0c6acc508a4b0",
+      "zip_bytes": 100581,
+      "files": 60,
+      "unpacked_bytes": 249163,
+      "slot": "previous-2"
+    }
+  ]
+}

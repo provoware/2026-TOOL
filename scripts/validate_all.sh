@@ -6,8 +6,8 @@ printf '\n[2/12] Manifest / Verträge\n'; python3 scripts/validate_manifest.py
 printf '\n[3/12] Agentenverträge\n'; python3 scripts/validate_agents.py
 printf '\n[4/12] Python-Syntax\n'; python3 -m py_compile \
   app/server.py app/project_store.py app/data_core.py app/self_repair.py app/job_manager.py app/sorter_preview.py \
-  scripts/build_backup_snapshots.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py \
-  tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py tests/test_sorter_preview.py \
+  scripts/build_backup_snapshots.py scripts/build_release_package.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py \
+  tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py tests/test_sorter_preview.py tests/test_release_package.py \
   tests/test_agent_gate.py tests/test_ux_contract.py tests/test_backup_workflow.py tests/test_backup_snapshots.py
 printf '\n[5/12] JavaScript-Syntax\n'; node --check app/static/js/feedback.js; node --check app/static/js/app.js; node --check app/static/js/data.js; node --check app/static/js/startup.js; node --check app/static/js/sorter.js
 printf '\n[6/12] Jobmanager / Migration / Resume / Journal\n'; python3 -m unittest -v tests.test_job_manager

@@ -9,7 +9,7 @@ printf '\n[4/12] Python-Syntax\n'; python3 -m py_compile \
   scripts/build_backup_snapshots.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py \
   tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py tests/test_sorter_preview.py \
   tests/test_agent_gate.py tests/test_ux_contract.py tests/test_backup_workflow.py tests/test_backup_snapshots.py
-printf '\n[5/12] JavaScript-Syntax\n'; node --check app/static/js/feedback.js; node --check app/static/js/app.js; node --check app/static/js/data.js; node --check app/static/js/startup.js
+printf '\n[5/12] JavaScript-Syntax\n'; node --check app/static/js/feedback.js; node --check app/static/js/app.js; node --check app/static/js/data.js; node --check app/static/js/startup.js; node --check app/static/js/sorter.js
 printf '\n[6/12] Jobmanager / Migration / Resume / Journal\n'; python3 -m unittest -v tests.test_job_manager
 printf '\n[7/12] Read-only Sortier-Analyse / Regeln / Vorschau\n'; python3 -m unittest -v tests.test_sorter_preview
 printf '\n[8/12] UX-Vertrag\n'; python3 -m unittest -v tests.test_ux_contract

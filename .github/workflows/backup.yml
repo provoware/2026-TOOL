@@ -1,12 +1,12 @@
-name: Zwei Vorgängerversionen halten
+name: Zwei Vorgängerversionen sichern
 on:
   push:
     branches: [main]
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  rotate:
+  backup:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -23,32 +23,11 @@ jobs:
             exit 0
           fi
           PREV2="$(git rev-parse "$BEFORE^1" 2>/dev/null || true)"
+          [[ -n "$PREV2" ]] || { echo "FEHLER: zweiter Vorgänger nicht verfügbar"; exit 1; }
           echo "skip=false" >> "$GITHUB_OUTPUT"
           echo "previous1=$BEFORE" >> "$GITHUB_OUTPUT"
           echo "previous2=$PREV2" >> "$GITHUB_OUTPUT"
-      - name: Backup-Refs über GitHub API rotieren
-        if: steps.refs.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PREVIOUS1: ${{ steps.refs.outputs.previous1 }}
-          PREVIOUS2: ${{ steps.refs.outputs.previous2 }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          set_ref() {
-            local name="$1" sha="$2"
-            [[ -n "$sha" ]] || return 0
-            if ! gh api --silent --method PATCH \
-              "repos/${GITHUB_REPOSITORY}/git/refs/heads/${name}" \
-              -f sha="$sha" -F force=true; then
-              gh api --silent --method POST \
-                "repos/${GITHUB_REPOSITORY}/git/refs" \
-                -f ref="refs/heads/${name}" -f sha="$sha"
-            fi
-          }
-          set_ref "backup/previous-1" "$PREVIOUS1"
-          set_ref "backup/previous-2" "$PREVIOUS2"
-      - name: Backup-Refs nachvalidieren
+      - name: Vollständige Zwei-Versionen-Sicherung erzeugen
         if: steps.refs.outputs.skip != 'true'
         env:
           PREVIOUS1: ${{ steps.refs.outputs.previous1 }}
@@ -56,15 +35,39 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          verify_ref() {
-            local name="$1" expected="$2"
-            [[ -n "$expected" ]] || return 0
-            actual="$(git ls-remote origin "refs/heads/${name}" | awk '{print $1}')"
-            [[ "$actual" == "$expected" ]] || {
-              echo "FEHLER: ${name} erwartet ${expected}, erhalten ${actual:-NICHT_VORHANDEN}"
-              exit 1
-            }
-            echo "OK ${name} -> ${actual}"
-          }
-          verify_ref "backup/previous-1" "$PREVIOUS1"
-          verify_ref "backup/previous-2" "$PREVIOUS2"
+          mkdir -p backup-artifact
+          git archive --format=tar.gz --output=backup-artifact/previous-1.tar.gz "$PREVIOUS1"
+          git archive --format=tar.gz --output=backup-artifact/previous-2.tar.gz "$PREVIOUS2"
+          git branch --force __provoware_previous_1 "$PREVIOUS1"
+          git branch --force __provoware_previous_2 "$PREVIOUS2"
+          git bundle create backup-artifact/two-previous.bundle \
+            refs/heads/__provoware_previous_1 refs/heads/__provoware_previous_2
+          cat > backup-artifact/manifest.txt <<EOF
+          PROVOWARE Zwei-Versionen-Backup
+          previous-1=$PREVIOUS1
+          previous-2=$PREVIOUS2
+          source-main=${{ github.sha }}
+          created=${{ github.event.head_commit.timestamp }}
+          EOF
+          (cd backup-artifact && sha256sum previous-1.tar.gz previous-2.tar.gz two-previous.bundle > SHA256SUMS)
+      - name: Sicherung lokal nachvalidieren
+        if: steps.refs.outputs.skip != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s backup-artifact/previous-1.tar.gz
+          test -s backup-artifact/previous-2.tar.gz
+          test -s backup-artifact/two-previous.bundle
+          tar -tzf backup-artifact/previous-1.tar.gz >/dev/null
+          tar -tzf backup-artifact/previous-2.tar.gz >/dev/null
+          git bundle verify backup-artifact/two-previous.bundle
+          (cd backup-artifact && sha256sum -c SHA256SUMS)
+      - name: Zwei vollständige Vorgängerversionen hochladen
+        if: steps.refs.outputs.skip != 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: provoware-two-previous-${{ github.run_number }}
+          path: backup-artifact/
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0

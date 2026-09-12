@@ -13,8 +13,8 @@ required=(
   docs/iterationen/ITERATION_02_PLAN.md docs/iterationen/ITERATION_021_PLAN.md docs/iterationen/ITERATION_022_UX_PLAN.md
   docs/iterationen/HOTFIX_BACKUP_ROTATION.md docs/iterationen/ITERATION_023_BACKUP_HOTFIX.md docs/iterationen/ITERATION_03_PLAN.md docs/iterationen/ITERATION_04_SORTER_PREVIEW_PLAN.md
   standards/PROJEKTSTANDARD.md standards/DATENSTANDARD.md
-  scripts/build_backup_snapshots.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py scripts/validate_all.sh
-  tests/README.md tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py tests/test_sorter_preview.py
+  scripts/build_backup_snapshots.py scripts/build_release_package.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py scripts/validate_all.sh
+  tests/README.md tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py tests/test_sorter_preview.py tests/test_release_package.py
   tests/test_agent_gate.py tests/test_ux_contract.py tests/test_backup_workflow.py tests/test_backup_snapshots.py
 )
 missing=0

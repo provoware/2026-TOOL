@@ -1,31 +1,14 @@
 # Entwicklungsregeln
 
-## Architektur
-
-- klare Trennung von UI, Anwendungslogik, Services und Datenhaltung
-- gemeinsame Logik zentralisieren
-- definierte Schnittstellen zwischen Modulen
-- Abhängigkeiten explizit halten
-- regenerierbare Daten von Originaldaten trennen
-
-## Sicherheit
-
-- atomare Speicherung für Konfigurationen
-- Transaktionen für zusammengehörige Datenbankänderungen
-- Vor- und Nachvalidierung bei kritischen Aktionen
-- sichere Fallbacks und Recovery statt stiller Datenverluste
-- kein endgültiges Löschen als Standardaktion
-
-## Wartbarkeit
-
-- kleine Funktionen mit klarer Verantwortung
-- große Dateien als Refactoring-Signal behandeln
-- wiederverwendbare Komponenten bevorzugen
-- verständliche deutsche Benennung, sofern technisch sinnvoll
-
-## Qualität
-
-- Nutzerabnahme ist kein Testschritt.
-- automatische Tests müssen erwartbare Nutzerabläufe abdecken.
-- Regressionen werden risikobasiert ausgewählt.
-- Kernfunktionen benötigen Restart- und Persistenztests.
+1. **Kleinste robuste Änderung:** keine Nebenumbauten ohne messbaren Nutzen.
+2. **Wiederverwendung:** gemeinsame UI-/Datei-/Persistenzlogik zentralisieren.
+3. **Codesparsamkeit:** weniger Code bevorzugen, wenn Lesbarkeit, Sicherheit und Testbarkeit gleich bleiben.
+4. **Vorvalidierung:** Voraussetzungen, Pfade, Eingaben, Abhängigkeiten prüfen.
+5. **Nachvalidierung:** Ergebnis und Integrität prüfen, erst dann Erfolg melden.
+6. **Fehlerprävention:** ungültige Zustände an Systemgrenzen abfangen.
+7. **Fallback statt Totalausfall:** lokale Fehler möglichst isolieren.
+8. **Transparenz:** Laienmeldung verständlich, technische Details protokollierbar.
+9. **Keine Nutzerabnahme:** Tests und Release-Gate sind automatisiert.
+10. **Regression lernt:** bestätigte Fehler erweitern das Sicherheitsnetz dauerhaft.
+11. **Zwei Vorgänger:** `backup/previous-1` und `backup/previous-2` müssen rückholbar bleiben.
+12. **Dokumentationssynchronität:** Verhalten, Hilfe, Manifest, Status und Changelog gemeinsam pflegen.

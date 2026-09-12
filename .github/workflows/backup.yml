@@ -1,0 +1,29 @@
+name: Zwei Vorgängerversionen halten
+on:
+  push:
+    branches: [main]
+permissions:
+  contents: write
+jobs:
+  rotate-backups:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 4}
+      - name: Vorherige zwei main-Stände als Rückfallzweige setzen
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          if [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]]; then
+            echo "Kein vorheriger Commit vorhanden; Rotation übersprungen."
+            exit 0
+          fi
+          git fetch origin "$BEFORE" --depth=2
+          git push --force origin "$BEFORE:refs/heads/backup/previous-1"
+          PREV2="$(git rev-parse "$BEFORE^" 2>/dev/null || true)"
+          if [[ -n "$PREV2" ]]; then
+            git push --force origin "$PREV2:refs/heads/backup/previous-2"
+          fi
+          echo "backup/previous-1 -> $BEFORE"
+          echo "backup/previous-2 -> ${PREV2:-nicht verfügbar}"

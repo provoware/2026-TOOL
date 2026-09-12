@@ -1,0 +1,40 @@
+name: Subagent-Gates
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  analyse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 3}
+      - name: Nur analysieren
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 scripts/agent_gate.py --mode analyse --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+  plan:
+    needs: analyse
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 3}
+      - name: Plan und TODO prüfen
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 scripts/agent_gate.py --mode plan --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+  plan-pruefung:
+    needs: plan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 3}
+      - name: Umsetzung gegen Plan prüfen
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 scripts/agent_gate.py --mode compliance --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"

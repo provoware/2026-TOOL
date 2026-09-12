@@ -1,36 +1,25 @@
-# Entwicklerdokumentation
+# Entwicklerdokumentation – v0.1.0
 
-## Projektphase
+## Laufzeit
+Python-Standardbibliothek + HTML/CSS/JavaScript. Keine externen Runtime-Abhängigkeiten.
 
-Das Repository befindet sich im neu aufgesetzten FOUNDATION-Zustand.
+`start.sh` startet `app/server.py`. Der Server bindet nur localhost, wählt einen freien Port und öffnet bevorzugt Chromium.
 
-## Geplante Hauptebenen
+## Persistenz
+Globale Konfiguration: `~/.config/provoware-headquarter/config.json`. Atomare Speicherung rotiert `.bak1` und `.bak2`.
 
-```text
-app/
-├── bootstrap/
-├── core/
-├── services/
-├── modules/
-├── jobs/
-├── ui/
-└── diagnostics/
-```
+Projektstruktur: siehe `standards/PROJEKTSTANDARD.md`.
 
-## Geplante Kernbausteine
+## Frontend
+`index.html` hält nur Struktur. `design.css` enthält Design-Tokens und fünf Themes. `app.js` enthält Shell-Interaktionen. `startup.js` kapselt die Startzustandsprüfung.
 
-- Startup Controller
-- Application State
-- Event Bus
-- Command Bus
-- Project Service
-- Database Service
-- Settings Service
-- Logging Service
-- Recovery Service
-- Health Service
-- Job Manager / Watchdog
+## API v0.1
+- `GET /api/health`
+- `GET /api/bootstrap`
+- `GET /api/manifest`
+- `GET /api/project/pick-base`
+- `POST /api/project/create`
+- `POST /api/quick-save`
 
-## Entwicklungsprinzip
-
-Neue Verzeichnisse und Module werden erst angelegt, wenn ihre Implementierung tatsächlich beginnt. Leere Architekturattrappen werden vermieden.
+## Erweiterungsregel
+Neue Fachmodule werden hinter stabilen Grenzen ergänzt. N bleibt der zentrale Modulhost. Gemeinsame Dateisystem- und Projektlogik darf nicht in einzelne UI-Module kopiert werden.

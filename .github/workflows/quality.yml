@@ -1,15 +1,16 @@
-name: Grundstruktur prüfen
-
+name: Release-Gate
 on:
   push:
+    branches: [main]
   pull_request:
-
+permissions:
+  contents: read
 jobs:
-  repository-structure:
+  quality:
     runs-on: ubuntu-latest
     steps:
-      - name: Repository auschecken
-        uses: actions/checkout@v4
-
-      - name: Grundstruktur validieren
-        run: ./scripts/validate_repo.sh
+      - uses: actions/checkout@v4
+      - name: Ausführbar machen
+        run: chmod +x start.sh scripts/*.sh scripts/*.py
+      - name: Vollständiges Release-Gate
+        run: ./scripts/validate_all.sh

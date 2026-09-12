@@ -1,24 +1,15 @@
 # Architektur
 
-## Leitidee
-
-Das PROVOWARE HEADQUARTER wird als modulare Desktop-Arbeitszentrale aufgebaut. Der zentrale Arbeitsbereich N hostet Module; Navigation, Status, Todo, Kalender, Suche, Projektinformationen und Diagnose bleiben entkoppelte Bestandteile.
+## Ziel
+Die Shell bleibt klein, austauschbar und erweiterbar. Fachmodule dürfen weder Startlogik noch Projektpersistenz duplizieren.
 
 ## Schichten
+1. **Bootstrap:** `start.sh`, Serverstart, Sessionmarker.
+2. **Service:** `ProjectStore`, atomare Persistenz, Projektstruktur, Schnellspeicher.
+3. **API:** schmale lokale HTTP-Schnittstelle.
+4. **UI-Shell:** A–N, Designsystem, Hilfe, Einstellungen.
+5. **Startup Controller:** echte unabhängige Prüfschritte.
+6. **Qualität:** Manifest, Tests, Agent-Gates, Backuprotation.
 
-1. UI / Darstellung
-2. Anwendungslogik
-3. Services
-4. Datenhaltung
-5. Systemintegration
-
-## Kommunikationsregeln
-
-- Module greifen nicht direkt auf Interna anderer Module zu.
-- gemeinsame Aktionen laufen über Services oder Commands.
-- Zustandsänderungen werden über definierte Events verteilt.
-- lange Vorgänge laufen als Jobs und blockieren die UI nicht.
-
-## Fehlerprinzip
-
-lokaler Fehler → lokale Einschränkung → kontrollierter Fallback → Recovery → erst bei echtem Datenrisiko blockieren.
+## Komplexitätsregel
+Neue Schicht nur, wenn sie Abhängigkeiten reduziert oder Logik mehrfach wiederverwendet. Kleine Fachlogik bleibt lokal; gemeinsame oder sicherheitskritische Logik wird zentralisiert.

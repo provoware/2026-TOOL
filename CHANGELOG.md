@@ -1,12 +1,17 @@
 # Changelog
 
-Alle relevanten Änderungen werden hier dokumentiert.
-
-## [0.1.0-foundation] - 2026-09-12
-
+## 0.1.0 – 2026-09-12
 ### Neu
-- Repository inhaltlich zurückgesetzt.
-- Professionelle Standardgrunddateien angelegt.
-- automatische Repository-Strukturprüfung vorbereitet.
-- Architektur- und Qualitätsregeln dokumentiert.
-- Grundlage für nutzerunabhängige automatische Validierung geschaffen.
+- Expert Shell mit A–N-Dashboard und dominantem Hauptarbeitsbereich N.
+- echte, gewichtete grafische Startpipeline.
+- fünf Themes und drei Bedienebenen.
+- lokaler Python-Server ohne externe Runtime-Abhängigkeiten.
+- sicherer Projektassistent und projektbezogener Schnellspeicher.
+- Hilfesystem, Status-/Loggingbereich und Fokusmodus.
+- triggerbasierte Agentenrollen und deterministische CI-Gates.
+- rotierende Rückfallzweige für zwei vorherige `main`-Versionen.
+
+### Sicherheit
+- localhost-only Server.
+- atomare JSON-Speicherung mit zwei Vorgängerkopien.
+- fremde nichtleere Zielordner werden nicht automatisch übernommen.

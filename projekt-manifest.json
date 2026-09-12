@@ -1,0 +1,45 @@
+{
+  "agents": {
+    "analysis": ".agents/ANALYSE_AGENT.md",
+    "compliance": ".agents/PLAN_PRUEFER.md",
+    "planning": ".agents/PLAN_AGENT.md"
+  },
+  "app": {
+    "id": "provoware-headquarter",
+    "name": "PROVOWARE HEADQUARTER",
+    "status": "iteration-1-expert-shell",
+    "version": "0.1.0"
+  },
+  "backup": {
+    "branches": [
+      "backup/previous-1",
+      "backup/previous-2"
+    ],
+    "keep_previous": 2,
+    "strategy": "rotating-git-branches"
+  },
+  "iteration": {
+    "name": "Expert Shell",
+    "number": 1,
+    "release": "0.1.0"
+  },
+  "quality": {
+    "manual_user_acceptance_required": false,
+    "post_validation": true,
+    "pre_validation": true,
+    "regression_required": true,
+    "release_gate": "scripts/validate_all.sh"
+  },
+  "runtime": {
+    "bind": "127.0.0.1",
+    "external_dependencies": [],
+    "python_min": "3.10"
+  },
+  "schema_version": 1,
+  "ui": {
+    "areas": ["A","B","C","D","E","F","G","H","I","J","K","L","M","N"],
+    "complexity_levels": ["laie","profi","experte"],
+    "main_workspace": "N",
+    "themes": ["carbon","violet","steel","nordic","terminal"]
+  }
+}

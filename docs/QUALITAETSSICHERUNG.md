@@ -1,40 +1,23 @@
-# Qualitätssicherung und lernendes Regressionsmanagement
+# Qualitätssicherung
 
-## Grundsatz
-
-Der Nutzer ist Anwender, nicht Tester.
-
-## Automatische Freigabekette
-
-Anforderung → Risikoanalyse → Implementierung → statische Prüfung → Unit-Test → Integrationstest → UI-Test → Fehlersimulation → Persistenztest → Restarttest → Regression → Accessibility → Performancevergleich → Datenintegrität → Release-Gate.
-
-## Lernendes Regressionsmanagement
-
-Jeder bestätigte Fehler erhält:
-
-- Fehler-ID
-- Auslöser
-- Ursache
-- Lösung
-- betroffene Komponenten
-- dauerhaften Schutz
-
-Fehlerhistorie beeinflusst spätere Risikobewertung und Testauswahl.
-
-## Risikobasierte Regression
-
-Kleine lokale Änderung: gezielte Tests.
-
-Änderung an zentralem Service: Tests aller abhängigen Module.
-
-Migration, Datenbank oder Dateisystem: vollständige Daten-, Recovery-, Backup- und Restart-Prüfung.
+## Kein manueller Nutzer-Test als Releasebedingung
+Freigabe erfolgt über automatische Prüfungen. Nutzerfeedback kann später zusätzliche Anforderungen liefern, ersetzt aber keine Tests.
 
 ## Release-Gate
+`scripts/validate_all.sh` prüft:
+- Pflichtstruktur
+- Manifest-Schema und Version
+- Python-Syntax
+- Server-/Projektservice-Tests
+- A–N-Bereiche
+- fünf Themes
+- Hilfedaten
+- Agentenrollen
 
-Keine Freigabe bei:
+GitHub Actions führt dasselbe Gate bei Push und Pull Request aus.
 
-- kritischem Fehler
-- Datenrisiko
-- fehlgeschlagener Kernregression
-- beschädigter Persistenz
-- fehlgeschlagenem Restart/Recovery bei betroffenen Funktionen
+## Regression
+Bestätigte Fehler erhalten dauerhaft Test, Validierungsregel oder Architekturverbesserung. Künftige Iterationen ergänzen gezielte Fault-Simulationen, Restarttests und Datenbankmigrationstests.
+
+## Rückfall
+Zwei Vorgänger von `main` werden als `backup/previous-1` und `backup/previous-2` gehalten. Lokale Konfigurationen besitzen zusätzlich `.bak1` und `.bak2`.

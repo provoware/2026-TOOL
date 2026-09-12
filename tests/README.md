@@ -1,15 +1,5 @@
-# Tests
+# Teststrategie
 
-Dieses Verzeichnis enthält später die automatischen Prüfungen.
+Iteration 1 nutzt ausschließlich Python-Standardbibliothek und statische Konsistenztests. Geprüft werden Manifest, A–N, Themes, Hilfe, sichere Projekterstellung, Fremdordnerschutz und append-only Schnellspeicher.
 
-Geplante Gruppen:
-
-- `unit/`
-- `integration/`
-- `ui/`
-- `recovery/`
-- `regression/`
-- `fault_simulation/`
-- `accessibility/`
-
-Tests verwenden ausschließlich isolierte Testdaten und dürfen keine realen Nutzerdaten verändern.
+Ab Iteration 2 kommen SQLite-Transaktions-, Restart-, Migrations- und Recoverytests hinzu. UI-End-to-End-Tests werden erst ergänzt, wenn ihr zusätzlicher Nutzen die Abhängigkeit rechtfertigt.

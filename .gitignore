@@ -1,40 +1,17 @@
-# Python
 __pycache__/
 *.py[cod]
-*.pyo
-.venv/
-venv/
-
-# Tests / Coverage
-.pytest_cache/
-.coverage
-htmlcov/
-
-# IDE / Editor
-.vscode/
-.idea/
-*.swp
-*~
-
-# Betriebssystem
-.DS_Store
-Thumbs.db
-
-# Laufzeitdaten
-logs/
-cache/
-tmp/
 *.log
 *.tmp
-*.lock
-
-# Lokale Nutzerdaten / Datenbanken
-*.sqlite
-*.sqlite3
-*.db
+*.bak
+.venv/
+venv/
 .env
-.env.*
-
-# Backups und Exporte
-backups/
-exports/
+.DS_Store
+.idea/
+.vscode/
+coverage/
+htmlcov/
+.pytest_cache/
+.mypy_cache/
+# lokale Laufzeitdaten gehören nicht ins Repository
+.runtime/

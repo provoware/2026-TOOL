@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "sections": [
+    {"title":"Erster Start","text":"Die Startanzeige prüft Dienst, Manifest, Einstellungen, Projekt, Oberfläche und Persistenz automatisch. Grün bedeutet bestanden, Gelb einen nichtkritischen Hinweis, Rot einen blockierenden Fehler."},
+    {"title":"Projekt einrichten","text":"Wähle einen Basisordner und einen Projektnamen. PROVOWARE legt darin einen eigenen Projektordner mit Standardstruktur an und verändert keine fremden Dateien im Basisordner."},
+    {"title":"Bereiche A–N","text":"A informiert, B stellt die Oberfläche ein, C erfasst DB-Inhalte, D verwaltet Todo, E zeigt den Kalender, F organisiert, G wählt Module, H sucht, I zeigt das Projekt, J speichert Notizen, K zeigt Status, L enthält Schnellstarts, M speichert schnell und N ist der Hauptarbeitsbereich."},
+    {"title":"Laie, Profi, Experte","text":"Die Stufe verändert nur Informationsdichte und Bedienelemente. Sicherheitsprüfungen bleiben in allen Stufen vollständig aktiv."},
+    {"title":"Fokusmodus","text":"Mit Arbeitsbereich maximierst du N. Escape oder Dashboard bringt die normale Ansicht zurück."},
+    {"title":"Schnellspeicher","text":"Titel und Text eingeben und Enter drücken. Der Text wird mit Zeitstempel an die passende Datei im Projektordner angehängt; bestehende Inhalte werden nicht überschrieben."},
+    {"title":"Backups und Qualität","text":"Bei Änderungen am Hauptzweig werden zwei vorherige Versionen als Rückfallstände gehalten. Automatische Workflows prüfen Struktur, Manifest, Tests, Agentenregeln und Plan-Konformität."}
+  ]
+}

@@ -20,7 +20,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 APP_ID = "provoware-headquarter"
 APP_NAME = "PROVOWARE HEADQUARTER"
-APP_VERSION = "0.3.0"
+APP_VERSION = "0.4.0"
 ROOT = Path(__file__).resolve().parents[1]
 APP_DIR = Path(__file__).resolve().parent
 STATIC_ROOT = APP_DIR / "static"
@@ -291,7 +291,7 @@ class AppContext:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "PROVOWARE/0.3.0"
+    server_version = "PROVOWARE/0.4.0"
 
     @property
     def app(self) -> AppContext:

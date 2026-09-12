@@ -1,23 +1,38 @@
 # Hotfix – Backup-Ref-Rotation nach v0.2.2
 
-## Befund
-Der v0.2.2-Squash-Commit bestand Release- und Subagent-Gates, aber der separate Workflow `Zwei Vorgängerversionen halten` scheiterte beim Schritt, der Backup-Branches per `git push --force` verschiebt.
+## Zweck dieser Datei
+Diese Datei dokumentiert den **ersten und zweiten fehlgeschlagenen Lösungsweg**, damit die Fehlerklasse nicht später versehentlich wieder eingeführt wird. Die aktuelle Lösung steht in `ITERATION_023_BACKUP_HOTFIX.md`.
 
-## Sofortschutz
-Die beiden Rückfallzweige wurden manuell auf die korrekten vollständigen Hauptstände gesetzt:
-- `backup/previous-1` → v0.2.1-Hauptstand `10ad01a…`
-- `backup/previous-2` → v0.2.0-Hauptstand `0748904…`
+## Ausgangsbefund
+Der v0.2.2-Hauptstand bestand Release- und Subagent-Gates. Der separate Workflow `Zwei Vorgängerversionen halten` scheiterte beim Verschieben historischer Backup-Zweige.
 
-## Ursachenklasse
-Workflow-/Berechtigungsgrenze. Die Backupfunktion soll nicht von einem Force-Push über Git abhängen, wenn GitHub bereits eine Ref-API mit `contents: write` bereitstellt.
+## Versuch 1 – `git push --force`
+GitHub verweigerte die Aktualisierung eines Backup-Branches auf einen historischen Commit, weil dieser geänderte `.github/workflows/*` enthielt und der GitHub-App-Token keine spezielle Workflow-Schreibberechtigung besaß.
 
-## Umsetzung
-1. Ref-Rotation über `gh api` PATCH/POST statt `git push --force`.
-2. vorhandene Ref aktualisieren, fehlende Ref kontrolliert erzeugen.
-3. Ziel-SHAs anschließend mit `git ls-remote` nachvalidieren.
-4. zweiter Vorgänger wird aus dem ersten Elterncommit des vorherigen `main`-Heads bestimmt.
-5. Workflow-Vertragstest verhindert Rückkehr zu `git push --force`.
-6. vollständige Release-/Agenten-Gates vor Merge.
+Ergebnis: **verworfen**.
 
-## Sicherheitsregel
-Ein Backupfehler verändert keine Nutzdaten und blockiert die Anwendung nicht. Er bleibt jedoch als Qualitätswarnung sichtbar und die Rückfallzweige werden nicht als aktuell behauptet, solange ihre SHAs nicht verifiziert wurden.
+## Versuch 2 – GitHub Ref API
+Daraufhin wurde die Rotation auf `gh api` PATCH/POST für `git/refs` umgestellt und eine SHA-Nachvalidierung ergänzt.
+
+Der reale Post-Merge-Lauf scheiterte ebenfalls:
+- HTTP 403,
+- `Resource not accessible by integration`.
+
+Ergebnis: **ebenfalls verworfen**.
+
+## Schlussfolgerung
+Das Problem ist nicht die konkrete Transportmethode (`git push` versus REST API), sondern die Integrations-/Berechtigungsgrenze bei historischen Refs mit Workflow-Inhalt. Ein weiterer direkter Ref-Rotationsversuch wäre nur Symptombehandlung.
+
+## Nachfolgelösung
+Die Primärstrategie wird deshalb auf **verifizierte Git-Archive als ZIP-Snapshots** umgestellt:
+- `backup/snapshots` als einmalig angelegter technischer Speicherzweig,
+- `version-backups/previous-1.zip`,
+- `version-backups/previous-2.zip`,
+- Manifest mit Commit-IDs und SHA-256,
+- ZIP-Inhaltsprüfung,
+- Rotation verändert ausschließlich `version-backups/*`.
+
+Die Archive enthalten die Workflow-Dateien des gesicherten Stands, ohne dass das Actions-Token die Workflow-Dateien des technischen Speicherzweigs ändern muss.
+
+## Regressionsregel
+Tests müssen dauerhaft verhindern, dass `gh api`-Ref-Rotation oder `git push --force` wieder als Primärstrategie eingeführt wird, solange keine ausdrücklich geeignete Repositoryberechtigung eingerichtet und separat verifiziert wurde.

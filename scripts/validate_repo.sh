@@ -5,8 +5,8 @@ required=(
   projekt-manifest.json start.sh
   .github/workflows/quality.yml .github/workflows/agents.yml .github/workflows/backup.yml
   app/server.py app/project_store.py app/data_core.py app/self_repair.py app/job_manager.py app/sorter_preview.py
-  app/static/index.html app/static/css/design.css app/static/css/data.css app/static/css/feedback.css
-  app/static/js/feedback.js app/static/js/app.js app/static/js/data.js app/static/js/startup.js app/static/help.json
+  app/static/index.html app/static/css/design.css app/static/css/data.css app/static/css/feedback.css app/static/css/sorter.css
+  app/static/js/feedback.js app/static/js/app.js app/static/js/data.js app/static/js/startup.js app/static/js/sorter.js app/static/help.json
   .agents/ANALYSE_AGENT.md .agents/RISIKO_AGENT.md .agents/FEHLERURSACHE_AGENT.md .agents/PLAN_AGENT.md
   .agents/REGRESSIONS_AGENT.md .agents/PLAN_PRUEFER.md .agents/RELEASE_PRUEFER.md
   docs/ARCHITEKTUR.md docs/QUALITAETSSICHERUNG.md docs/STARTROUTINE.md docs/AGENTEN_WORKFLOW.md docs/HILFE.md docs/SELFREPAIR.md docs/UX_STANDARD.md docs/OFFENE_RISIKEN.md docs/JOB_ACTION_CORE.md

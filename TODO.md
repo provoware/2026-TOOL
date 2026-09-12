@@ -17,15 +17,15 @@
 
 ## 🔵 Iteration 3 – Jobmanager & reversibles Aktionsjournal v0.3.0
 1. [x] technischen R3-Plan vor Implementierung erstellt.
-2. [ ] SQLite-Schema v1 → v2 sicher migrieren; bestehende Todos unverändert erhalten.
-3. [ ] persistenten Jobmanager mit Zustandsmaschine und append-only Ereignissen implementieren.
-4. [ ] Pause, Resume, Abbruch, Checkpoint und Heartbeat implementieren.
-5. [ ] Neustart-Recovery und stale-Heartbeat-Watchdog implementieren.
-6. [ ] transaktionales Datei-Aktionsjournal mit planned/applied/skipped/failed/undone implementieren.
-7. [ ] Undo-Vertrag: nur angewendete, ausdrücklich reversible Aktionen rücksetzbar.
-8. [ ] lokale Job-/Journal-API ergänzen; keine externe Netzwerkfreigabe.
-9. [ ] Migration, Lifecycle, Crash/Resume, Watchdog, Journal und API vollständig regressionsprüfen.
-10. [ ] Manifest, Changelog, Status, Qualitätsdoku und Testübersicht synchronisieren.
+2. [x] SQLite-Schema v1 → v2 sicher migriert; bestehende Todos bleiben erhalten und bestehende DB wird vorher verifiziert gesichert.
+3. [x] persistenten Jobmanager mit Zustandsmaschine und append-only Ereignissen implementiert.
+4. [x] Pause, Resume, Abbruch, Checkpoint und Heartbeat implementiert.
+5. [x] Neustart-Recovery und stale-Heartbeat-Watchdog implementiert.
+6. [x] transaktionales Datei-Aktionsjournal mit planned/applied/skipped/failed/undone implementiert.
+7. [x] Undo-Vertrag umgesetzt: nur angewendete, ausdrücklich reversible Aktionen sind Undo-Kandidaten.
+8. [x] lokale Job-/Journal-API ergänzt; Worker-Bestätigungen bleiben service-intern, keine externe Netzwerkfreigabe.
+9. [ ] vollständige Migration-, Lifecycle-, Crash/Resume-, Watchdog-, Journal- und API-Regression im finalen PR-Gate bestehen.
+10. [x] Manifest, Changelog, Projektstatus, Architektur, Qualitätssicherung und Testübersicht synchronisiert.
 11. [ ] vollständiges PR Release-Gate + sieben Subagent-Gates bestehen.
 12. [ ] nach Merge dieselben Gates auf `main` sowie reale Snapshot-Backuprotation prüfen.
 

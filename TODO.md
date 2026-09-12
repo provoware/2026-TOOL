@@ -11,11 +11,23 @@
 - [x] Analyse-, Plan- und Plan-Prüfer-Rollen
 - [x] Manifest- und Release-Gate-Grundlage
 
-## 🔵 Nächste geplante Iteration – Datenkern
-1. SQLite-Service mit WAL, Foreign Keys und Schema-Version.
-2. Todo D mit optionaler Terminierung, Archiv und Wiederherstellung.
-3. Kalender E aus derselben Todo-Datenquelle, keine Doppelhaltung.
-4. Tests: Transaktion, Restart, Archiv, ungültige Eingabe, Projektwechsel.
+## 🟢 Iteration 2 – Datenkern v0.2.0
+1. [x] SQLite-Service mit WAL, Foreign Keys, Busy Timeout und Schema-Version.
+2. [x] transaktionale Schreiblogik und Rollbacktests.
+3. [x] Todo D mit optionaler Terminierung, Priorität, Archiv und Wiederherstellung.
+4. [x] Kalender E aus derselben Todo-Datenquelle, keine Doppelhaltung.
+5. [x] verifizierte DB-Sicherungen, Quarantäne und Recovery.
+6. [x] Restart-/Persistenz-, Crash- und Korruptions-Regression.
+7. [x] HTTP-API-Vertragstest.
+8. [x] Expert-Shell-Regression beibehalten.
+9. [x] Datenstandard, Manifest, Hilfe, Architektur und Changelog aktualisieren.
+10. [x] vollständigen Iterationsdiff durch unabhängiges GitHub-Release-Gate prüfen.
+11. [x] Analyse-, Plan- und Plan-Prüfer-Gates für den vollständigen Diff bestanden.
+
+## Nächste sinnvolle Ausbaustufe
+- DB-Eingabemaske C als dynamisches Schema-/Formularsystem auf demselben Datenkern.
+- globale Suche H über Todo, Notizen, Schnellspeicher und spätere DB-Inhalte.
+- Organisationsbereich F weiter ausbauen, ohne Statistikduplikate zu erzeugen.
 
 ## Qualitätsregel
-Vor Umsetzung zuerst Analyse. Plan-Subagent dokumentiert nur hier. Umsetzung erst danach; Plan-Prüfer kontrolliert anschließend die Abweichungen.
+Vor Umsetzung zuerst Analyse und dokumentierter Plan. Umsetzung danach automatisch validieren; Plan-Prüfer kontrolliert Abweichungen. Nutzer ist Anwender und nicht reguläre Test- oder Abnahmeinstanz.

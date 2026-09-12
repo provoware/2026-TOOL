@@ -12,7 +12,7 @@ required=(
   docs/iterationen/ITERATION_02_PLAN.md docs/iterationen/ITERATION_021_PLAN.md
   standards/PROJEKTSTANDARD.md standards/DATENSTANDARD.md
   scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py scripts/validate_all.sh
-  tests/README.md tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py
+  tests/README.md tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_agent_gate.py
 )
 missing=0
 for file in "${required[@]}"; do

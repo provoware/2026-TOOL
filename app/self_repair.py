@@ -106,9 +106,12 @@ class SelfRepairCoordinator:
     @classmethod
     def valid_project_marker(cls, project_root: Path | str) -> tuple[bool, str]:
         root = Path(project_root).expanduser().resolve(strict=False)
-        marker = root / ".provoware" / "project.json"
+        marker_dir = root / ".provoware"
+        marker = marker_dir / "project.json"
         if not root.is_dir():
             return False, "Projektordner ist nicht erreichbar."
+        if marker_dir.is_symlink() or marker.is_symlink():
+            return False, "PROVOWARE-Projektmarker darf nicht über einen Symlink umgeleitet werden."
         if not marker.is_file():
             return False, "PROVOWARE-Projektmarker fehlt."
         data = cls._read_json_object(marker)
@@ -122,6 +125,36 @@ class SelfRepairCoordinator:
         if not isinstance(name, str) or not name.strip():
             return False, "Projektmarker enthält keinen gültigen Projektnamen."
         return True, "Projektmarker gültig."
+
+    @staticmethod
+    def _project_path_issue(root: Path, target: Path) -> str | None:
+        if target.is_symlink():
+            return "Symlink an einem PROVOWARE-Standardpfad ist aus Sicherheitsgründen nicht zulässig."
+        if target.exists() and not target.is_dir():
+            return "Erwarteter Standardordner ist bereits als Datei oder Sonderpfad vorhanden."
+        if target.exists():
+            try:
+                resolved = target.resolve(strict=True)
+            except OSError:
+                return "Standardpfad kann nicht sicher aufgelöst werden."
+            if resolved.parent != root:
+                return "Standardpfad verlässt die validierte Projektgrenze."
+        return None
+
+    @classmethod
+    def project_structure_valid(cls, project_root: Path | str, project_dirs: Iterable[str]) -> tuple[bool, str]:
+        root = Path(project_root).expanduser().resolve(strict=False)
+        marker_valid, marker_message = cls.valid_project_marker(root)
+        if not marker_valid:
+            return False, marker_message
+        for dirname in project_dirs:
+            target = root / dirname
+            issue = cls._project_path_issue(root, target)
+            if issue:
+                return False, f"Standardpfad '{dirname}': {issue}"
+            if not target.is_dir():
+                return False, f"Standardordner '{dirname}' fehlt."
+        return True, "Projektstruktur gültig."
 
     @staticmethod
     def _fsync_directory(path: Path) -> None:
@@ -185,7 +218,7 @@ class SelfRepairCoordinator:
             self.config_path.with_suffix(self.config_path.suffix + ".bak1"),
             self.config_path.with_suffix(self.config_path.suffix + ".bak2"),
         )
-        source = next((candidate for candidate in candidates if candidate.is_file() and self._valid_config(candidate)), None)
+        source = next((candidate for candidate in candidates if candidate.is_file() and not candidate.is_symlink() and self._valid_config(candidate)), None)
         if source is None:
             report.events.append(RepairEvent(
                 "CONFIG_UNRECOVERABLE",
@@ -246,10 +279,11 @@ class SelfRepairCoordinator:
         report.events.append(RepairEvent("PROJECT_MARKER_OK", "ok", message, path=str(root)))
         for dirname in self.project_dirs:
             target = root / dirname
-            if target.is_dir():
+            issue = self._project_path_issue(root, target)
+            if issue:
+                report.events.append(RepairEvent("PROJECT_PATH_COLLISION", "error", f"Standardpfad '{dirname}': {issue} Keine automatische Änderung.", path=str(target)))
+            elif target.is_dir():
                 continue
-            if target.exists():
-                report.events.append(RepairEvent("PROJECT_PATH_COLLISION", "error", f"Standardpfad '{dirname}' ist kein Ordner; keine automatische Änderung.", path=str(target)))
             else:
                 report.events.append(RepairEvent("PROJECT_DIR_MISSING", "warning", f"Standardordner '{dirname}' fehlt.", path=str(target)))
         return report
@@ -274,10 +308,11 @@ class SelfRepairCoordinator:
 
         for dirname in self.project_dirs:
             target = root / dirname
-            if target.is_dir():
+            issue = self._project_path_issue(root, target)
+            if issue:
+                report.events.append(RepairEvent("PROJECT_PATH_COLLISION", "error", f"Standardpfad '{dirname}': {issue} Keine automatische Änderung.", path=str(target)))
                 continue
-            if target.exists():
-                report.events.append(RepairEvent("PROJECT_PATH_COLLISION", "error", f"Standardpfad '{dirname}' ist kein Ordner; keine automatische Änderung.", path=str(target)))
+            if target.is_dir():
                 continue
             try:
                 target.mkdir(parents=False, exist_ok=False)
@@ -315,7 +350,11 @@ class SelfRepairCoordinator:
 
     def _log(self, report: RepairReport, project_root: Path | None) -> None:
         try:
-            log_dir = (project_root / "logs") if project_root is not None and project_root.is_dir() else (self.config_dir / "logs")
+            project_log = (project_root / "logs") if project_root is not None and project_root.is_dir() else None
+            if project_log is not None and project_log.is_dir() and not project_log.is_symlink():
+                log_dir = project_log
+            else:
+                log_dir = self.config_dir / "logs"
             log_dir.mkdir(parents=True, exist_ok=True)
             path = log_dir / "selfrepair.jsonl"
             payload = {"at": self._now(), **report.as_dict()}

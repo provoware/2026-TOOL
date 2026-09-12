@@ -14,6 +14,7 @@ R3_PATHS = (
     "app/self_repair.py",
     "app/server.py",
     ".github/workflows/",
+    "scripts/build_backup_snapshots.py",
     "scripts/agent_gate.py",
     "scripts/validate_",
     "AGENTS.md",
@@ -75,6 +76,11 @@ def risk_level(files: list[str], removed: list[str]) -> tuple[str, list[str]]:
     return level, reasons
 
 
+def requires_regression(risk: str, code_changed: bool) -> bool:
+    """R1–R3-Verhaltensänderungen brauchen explizite Regressionsevidenz."""
+    return code_changed and risk in {"R1", "R2", "R3"}
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--mode", choices=MODES, required=True)
@@ -98,8 +104,7 @@ def main() -> None:
         print("Gelöscht: " + ", ".join(removed))
 
     if args.mode == "analyse":
-        print("Trigger: aktiv" if files else "Trigger: keine Änderung")
-        print("Ergebnis: Analyse abgeschlossen; dieses Gate verändert keine Dateien.")
+        print("Ergebnis: read-only Analyse abgeschlossen.")
         return
 
     if args.mode == "risk":
@@ -122,8 +127,8 @@ def main() -> None:
         return
 
     if args.mode == "regression":
-        if risk in {"R2", "R3"} and code and not tests:
-            print("BLOCKIERT: R2/R3-Änderung ohne geänderte Regressionstests.")
+        if requires_regression(risk, bool(code)) and not tests:
+            print("BLOCKIERT: R1/R2/R3-Änderung ohne geänderte Regressionstests.")
             raise SystemExit(1)
         print("Ergebnis: Regressionsschutz ist im Diff berücksichtigt.")
         return
@@ -153,8 +158,8 @@ def main() -> None:
             print("BLOCKIERT: git diff --check meldet Format-/Whitespacefehler.")
             print(diff_check.stdout + diff_check.stderr)
             raise SystemExit(1)
-        if risk == "R3" and not tests:
-            print("BLOCKIERT: R3-Release ohne Teständerung.")
+        if requires_regression(risk, bool(code)) and not tests:
+            print("BLOCKIERT: verhaltensändernder Release ohne Teständerung.")
             raise SystemExit(1)
         print("Ergebnis: deterministische Release-Vorprüfung bestanden.")
         return

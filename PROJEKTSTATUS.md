@@ -1,31 +1,30 @@
 # Projektstatus
 
-## Basis
-🟢 v0.2.1 – Reliability & Self-Repair ist über PR #4 nach `main` gemergt.
+## Version
+**v0.2.2 – UX, Feedback & Transparenz**
 
-## Aktuelle Entwicklung
-🔵 Iteration 2.2 – UX, Feedback & Transparenz
+## Status
+🟢 Kandidatenprüfung bestanden; Version auf v0.2.2 promoviert. Finaler Promotions-Head wird vor Merge nochmals vollständig geprüft.
 
-Geplanter nächster Release: **v0.2.2**. Die Versionsnummer wird erst nach bestandener Kandidatenprüfung in Laufzeit und Manifest promoviert.
-
-## Bereits implementiert im Kandidaten
-- zentrale Prozess-/Feedbackschicht,
-- permanente Prozessleiste mit stabilem Platz,
+## UX / Laienbedienung
+- permanente globale Prozessanzeige mit reserviertem Platz,
+- echte Prozentwerte nur wenn messbar; sonst klarer Aktivitätszustand,
 - Warnungs-/Fehlerzähler,
-- ARIA-Live-Rückmeldungen mit Symbol + Text,
-- Busy-/Doppelausführungsschutz für wichtige Nutzeraktionen,
-- Zoom 100–200 % inklusive Tastatur und Strg+Mausrad,
-- Skip-Link und größere Standard-Aktionsziele,
-- verbesserte leere Zustände und verständlichere Fehlermeldungen,
-- Self-Repair, Projektanlage, Schnellspeicher und Todo an gemeinsames Feedback angebunden,
-- verbindlicher UX-Standard und automatische UX-Vertragstests,
-- separates sichtbares UX-Gate in GitHub Actions.
+- wichtige ARIA-Live-Rückmeldungen mit Symbol + Klartext,
+- Busy-/Doppelausführungsschutz,
+- Zoom 100–200 % mit Regler, Tastatur und Strg+Mausrad,
+- Skip-Link und sichtbare Fokusführung,
+- größere Standard-Aktionsziele,
+- verständlichere Leer-, Fehler- und Ergebniszustände,
+- Projektanlage, Self-Repair, Schnellspeicher und Todo verwenden dasselbe Feedbackmodell.
 
-## Sicherheitsstatus
-- keine destruktive neue Fachfunktion,
-- Self-Repair-Denylist unverändert aktiv,
-- Datenkern/Crash/Recovery bleiben Teil der Gesamtregression,
-- Nutzer-Abnahme ist nicht als Releasevoraussetzung vorgesehen.
+## Qualität
+- Kandidaten-Head `40c21ce7b9b2440872ce2d881d84fecc55d9d215` geprüft,
+- Release-Gate Run `34693108790`: 🟢 success,
+- siebenstufiges Subagent-Gate Run `34693108804`: 🟢 success,
+- 37 automatische Tests im Kandidatenstand: Shell 8, Datenkern 8, API 4, Self-Repair 8, Agenten 3, UX 6,
+- Datenkern-/Crash-/Recovery-Regression unverändert Bestandteil des Gates,
+- Nutzer-Abnahme: nicht erforderlich.
 
-## Freigabestatus
-🟡 Kandidat – vollständiges Release-/Agenten-Gate für Iteration 2.2 steht noch aus.
+## Noch vor Merge
+Der Promotions-Head mit Versionsnummer v0.2.2 muss dieselben Release-/Agenten-Gates nochmals bestehen. Danach Squash-Merge nach `main` und Post-Merge-Gate.

@@ -11,8 +11,10 @@ class UxContractTests(unittest.TestCase):
         cls.html = (ROOT / "app/static/index.html").read_text(encoding="utf-8")
         cls.app_js = (ROOT / "app/static/js/app.js").read_text(encoding="utf-8")
         cls.data_js = (ROOT / "app/static/js/data.js").read_text(encoding="utf-8")
+        cls.sorter_js = (ROOT / "app/static/js/sorter.js").read_text(encoding="utf-8")
         cls.feedback_js = (ROOT / "app/static/js/feedback.js").read_text(encoding="utf-8")
         cls.feedback_css = (ROOT / "app/static/css/feedback.css").read_text(encoding="utf-8")
+        cls.sorter_css = (ROOT / "app/static/css/sorter.css").read_text(encoding="utf-8")
 
     def test_global_process_feedback_contract(self):
         for token in (
@@ -43,8 +45,44 @@ class UxContractTests(unittest.TestCase):
     def test_busy_protection_for_user_actions(self):
         self.assertIn('button.setAttribute("aria-busy", "true")', self.app_js)
         self.assertIn('button.setAttribute("aria-busy", "true")', self.data_js)
+        self.assertIn('button.setAttribute("aria-busy", "true")', self.sorter_js)
         self.assertIn("button.disabled = true", self.app_js)
         self.assertIn("button.disabled = true", self.data_js)
+        self.assertIn("button.disabled = true", self.sorter_js)
+
+    def test_sorter_module_is_lazy_loaded_and_read_only_wording_is_explicit(self):
+        self.assertIn('script.src = "/static/js/sorter.js"', self.app_js)
+        self.assertIn('btn.dataset.module === "dateien"', self.app_js)
+        for token in (
+            "Sichere Vorschau: Dieser Schritt verändert keine Datei.",
+            "Nur analysieren – nichts verändern",
+            "/api/sorter/scans",
+            "sorter-recursive",
+            "sorter-hidden-files",
+            "sorter-pause",
+            "sorter-resume",
+            "sorter-cancel",
+            "Konflikte",
+            "Übersprungen",
+        ):
+            self.assertIn(token, self.sorter_js)
+        for forbidden in ("/api/sorter/execute", "/api/sorter/move", "/api/sorter/delete"):
+            self.assertNotIn(forbidden, self.sorter_js)
+
+    def test_sorter_safe_defaults_and_rule_builder_are_visible_without_rule_syntax(self):
+        self.assertIn('type: "checkbox", checked: true', self.sorter_js)
+        self.assertIn('id: "sorter-recursive", type: "checkbox"', self.sorter_js)
+        self.assertIn('id: "sorter-word"', self.sorter_js)
+        self.assertIn('id: "sorter-word-target"', self.sorter_js)
+        self.assertIn("Dateiname enthält", self.sorter_js)
+        self.assertIn("Dann Zielgruppe", self.sorter_js)
+        self.assertIn("Vorrang", self.sorter_js)
+        self.assertIn("Gleich starke Regeln schlagen verschiedene Ziele vor.", self.sorter_js)
+
+    def test_sorter_layout_is_responsive_and_has_stable_scroll_regions(self):
+        for token in (".sorter-shell", ".sorter-table-wrap", "overflow:auto", "@media(max-width:700px)"):
+            self.assertIn(token, self.sorter_css)
+        self.assertIn("min-height:44px", self.sorter_css)
 
     def test_help_explains_feedback_model(self):
         help_data = json.loads((ROOT / "app/static/help.json").read_text(encoding="utf-8"))

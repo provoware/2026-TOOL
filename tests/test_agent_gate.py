@@ -16,11 +16,12 @@ class AgentGateTests(unittest.TestCase):
         self.assertEqual(risk, "R1")
         self.assertTrue(agent_gate.requires_regression(risk, True))
 
-    def test_persistence_backup_job_or_agent_contract_change_is_r3(self):
+    def test_persistence_backup_job_sorter_or_agent_contract_change_is_r3(self):
         for path in (
             "app/data_core.py",
             "app/self_repair.py",
             "app/job_manager.py",
+            "app/sorter_preview.py",
             "scripts/build_backup_snapshots.py",
             ".github/workflows/backup.yml",
             "AGENTS.md",

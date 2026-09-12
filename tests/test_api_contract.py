@@ -6,6 +6,7 @@ import os
 from pathlib import Path
 import tempfile
 import threading
+import time
 import unittest
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
@@ -64,10 +65,23 @@ class ApiContractTests(unittest.TestCase):
         self.assertTrue(payload["project"]["available"])
         return Path(payload["project"]["path"])
 
+    def wait_job(self, job_id: str, wanted: set[str] | None = None, timeout: float = 3.0) -> dict:
+        wanted = wanted or {"completed", "failed", "cancelled", "paused", "interrupted"}
+        deadline = time.monotonic() + timeout
+        last = None
+        while time.monotonic() < deadline:
+            status, payload = self.request(f"/api/jobs/{job_id}")
+            self.assertEqual(status, 200)
+            last = payload["job"]
+            if last["status"] in wanted:
+                return last
+            time.sleep(0.03)
+        self.fail(f"Job {job_id} erreichte Zielstatus nicht; zuletzt: {last}")
+
     def test_health_reports_runtime_version(self):
         status, payload = self.request("/api/health")
         self.assertEqual(status, 200)
-        self.assertEqual(payload["version"], "0.3.0")
+        self.assertEqual(payload["version"], "0.4.0")
 
     def test_todo_calendar_archive_restore_contract(self):
         self.create_project()
@@ -178,6 +192,98 @@ class ApiContractTests(unittest.TestCase):
         status, jobs = self.request("/api/jobs")
         self.assertEqual(status, 200)
         self.assertEqual(jobs["items"], [])
+
+    def test_sorter_api_runs_async_and_returns_summary_and_paged_preview(self):
+        self.create_project()
+        source = Path(self.temp.name) / "downloads"
+        source.mkdir()
+        (source / "SUNO_track.mp3").write_bytes(b"audio")
+        (source / "bild.png").write_bytes(b"image")
+        before = {path.name: path.read_bytes() for path in source.iterdir()}
+        rules = [
+            {"id": "audio", "name": "Audio", "priority": 10, "category": "Audio", "target_group": "Audio"},
+            {"id": "suno", "name": "Suno", "priority": 100, "contains_any": ["suno"], "target_group": "Suno"},
+        ]
+
+        status, created = self.request(
+            "/api/sorter/scans",
+            "POST",
+            {"source_path": str(source), "rules": rules, "recursive": False, "include_hidden": False},
+        )
+        self.assertEqual(status, 202)
+        self.assertTrue(created["read_only"])
+        job_id = created["job"]["id"]
+        final = self.wait_job(job_id)
+        self.assertEqual(final["status"], "completed")
+
+        status, summary = self.request(f"/api/sorter/{job_id}/summary")
+        self.assertEqual(status, 200)
+        self.assertTrue(summary["read_only"])
+        self.assertEqual(summary["files"], 2)
+        self.assertEqual(summary["decisions"]["matched"], 1)
+        self.assertEqual(summary["decisions"]["unmatched"], 1)
+        self.assertFalse(summary["worker_active"])
+
+        status, page = self.request(f"/api/sorter/{job_id}/preview?offset=0&limit=1")
+        self.assertEqual(status, 200)
+        self.assertEqual(page["total"], 2)
+        self.assertEqual(len(page["items"]), 1)
+        status, matched = self.request(f"/api/sorter/{job_id}/preview?decision=matched&limit=10")
+        self.assertEqual(status, 200)
+        self.assertEqual(matched["total"], 1)
+        self.assertEqual(matched["items"][0]["target_group"], "Suno")
+        self.assertEqual(before, {path.name: path.read_bytes() for path in source.iterdir()})
+
+    def test_sorter_api_rejects_symlink_source_with_validation_code(self):
+        self.create_project()
+        source = Path(self.temp.name) / "real-source"
+        source.mkdir()
+        link = Path(self.temp.name) / "source-link"
+        link.symlink_to(source, target_is_directory=True)
+        status, payload = self.request(
+            "/api/sorter/scans", "POST", {"source_path": str(link), "rules": []}
+        )
+        self.assertEqual(status, 400)
+        self.assertEqual(payload["code"], "VALIDATION")
+        self.assertIn("Symlink", payload["error"])
+
+    def test_sorter_resume_endpoint_relaunches_worker(self):
+        self.create_project()
+        source = Path(self.temp.name) / "resume-source"
+        source.mkdir()
+        for index in range(3):
+            (source / f"datei-{index}.txt").write_text("x", encoding="utf-8")
+
+        sorter = self.app.sorter_preview()
+        manager = self.app.job_manager()
+        job = sorter.create_scan_job(str(source))
+        manager.start_job(job["id"])
+        manager.request_pause(job["id"])
+        paused = manager.acknowledge_pause(job["id"])
+        self.assertEqual(paused["status"], "paused")
+        self.assertFalse(self.app.active_scan_worker(job["id"]))
+
+        status, resumed = self.request(f"/api/sorter/{job['id']}/resume", "POST", {})
+        self.assertEqual(status, 200)
+        self.assertEqual(resumed["job"]["status"], "running")
+        final = self.wait_job(job["id"])
+        self.assertEqual(final["status"], "completed")
+        status, preview = self.request(f"/api/sorter/{job['id']}/preview?limit=10")
+        self.assertEqual(status, 200)
+        self.assertEqual(preview["total"], 3)
+
+    def test_sorter_preview_filter_validation_is_stable(self):
+        self.create_project()
+        source = Path(self.temp.name) / "filter-source"
+        source.mkdir()
+        (source / "x.txt").write_text("x", encoding="utf-8")
+        status, created = self.request("/api/sorter/scans", "POST", {"source_path": str(source)})
+        self.assertEqual(status, 202)
+        job_id = created["job"]["id"]
+        self.assertEqual(self.wait_job(job_id)["status"], "completed")
+        status, payload = self.request(f"/api/sorter/{job_id}/preview?decision=nicht-erlaubt")
+        self.assertEqual(status, 400)
+        self.assertEqual(payload["code"], "VALIDATION")
 
     def test_self_repair_status_is_read_only_and_run_repairs_missing_standard_dir(self):
         project = self.create_project()

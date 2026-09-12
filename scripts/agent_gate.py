@@ -13,6 +13,7 @@ R3_PATHS = (
     "app/project_store.py",
     "app/self_repair.py",
     "app/job_manager.py",
+    "app/sorter_preview.py",
     "app/server.py",
     ".github/workflows/",
     "scripts/build_backup_snapshots.py",

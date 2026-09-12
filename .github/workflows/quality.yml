@@ -23,9 +23,9 @@ jobs:
       - name: 04 · Python-Syntax
         run: >-
           python3 -m py_compile
-          app/server.py app/project_store.py app/data_core.py app/self_repair.py app/job_manager.py
-          scripts/build_backup_snapshots.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py
-          tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py
+          app/server.py app/project_store.py app/data_core.py app/self_repair.py app/job_manager.py app/sorter_preview.py
+          scripts/build_backup_snapshots.py scripts/build_release_package.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py
+          tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py tests/test_sorter_preview.py tests/test_release_package.py
           tests/test_agent_gate.py tests/test_ux_contract.py tests/test_backup_workflow.py tests/test_backup_snapshots.py
       - name: 05 · JavaScript-Syntax
         run: |
@@ -33,25 +33,40 @@ jobs:
           node --check app/static/js/app.js
           node --check app/static/js/data.js
           node --check app/static/js/startup.js
+          node --check app/static/js/sorter.js
       - name: 06 · Shell-Regression
         run: python3 -m unittest tests.test_shell -v
       - name: 07 · Datenkern Crash/Recovery
         run: python3 -m unittest tests.test_data_core -v
       - name: 08 · Jobmanager / Migration / Resume / Journal
         run: python3 -m unittest tests.test_job_manager -v
-      - name: 09 · Self-Repair-Regression
+      - name: 09 · Read-only Sortier-Analyse / Regeln / Vorschau
+        run: python3 -m unittest tests.test_sorter_preview -v
+      - name: 10 · Self-Repair-Regression
         run: python3 -m unittest tests.test_self_repair -v
-      - name: 10 · HTTP-API-Vertrag
+      - name: 11 · HTTP-API-Vertrag
         run: python3 -m unittest tests.test_api_contract -v
-      - name: 11 · Agenten-Risikogate
+      - name: 12 · Agenten-Risikogate
         run: python3 -m unittest tests.test_agent_gate -v
-      - name: 12 · UX / Feedback / Barrierefreiheit
+      - name: 13 · UX / Feedback / Barrierefreiheit
         run: python3 -m unittest tests.test_ux_contract -v
-      - name: 13 · Backup-Workflow-Vertrag
+      - name: 14 · Backup-Workflow-Vertrag
         run: python3 -m unittest tests.test_backup_workflow -v
-      - name: 14 · Backup-Snapshot-Inhalt
+      - name: 15 · Backup-Snapshot-Inhalt
         run: python3 -m unittest tests.test_backup_snapshots -v
-      - name: 15 · Gesamte Test-Discovery
+      - name: 16 · Gesamte Test-Discovery
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
-      - name: 16 · Vollständiges Release-Gate
+      - name: 17 · Vollständiges Release-Gate
         run: ./scripts/validate_all.sh
+      - name: Release-ZIP erzeugen und verifizieren
+        run: python3 scripts/build_release_package.py --output release-artifacts --commit HEAD
+      - name: Release-ZIP als Artefakt bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: PROVOWARE-HEADQUARTER-v0.4.0
+          path: |
+            release-artifacts/PROVOWARE-HEADQUARTER-v0.4.0.zip
+            release-artifacts/PROVOWARE-HEADQUARTER-v0.4.0.zip.sha256
+            release-artifacts/release-package.json
+          if-no-files-found: error
+          retention-days: 30

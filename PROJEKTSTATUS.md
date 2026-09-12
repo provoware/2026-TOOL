@@ -1,15 +1,12 @@
 # Projektstatus
 
-## Freigegebener Produktlaufzeitstand
-**v0.3.0 – Jobmanager & reversibles Aktionsjournal**
-
-## Aktive Release-Promotion
+## Produktlaufzeit
 **v0.4.0 – Read-only Sortier-Analyse & Vorschau**
 
 ## Status
-🟡 **Release Candidate – Funktionsumfang vollständig, finale Versionspromotion und Release-Gates stehen noch aus.**
+🟡 **Release Candidate – Funktionsumfang und Versionspromotion vollständig; finale PR-/main-Gates stehen noch aus.**
 
-Der integrierte Implementierungshead `693ebbbf0124bb94db20a995877f06fa95f796f2` bestand bereits das vollständige 17-stufige Release-Gate. Die automatische Gesamt-Discovery auf diesem Stand umfasste **76 Tests**, alle grün. Nachfolgende Dokumentations- und Versionspromotionscommits müssen denselben vollständigen Prüfpfad erneut bestehen, bevor ein Merge zulässig ist.
+Manifest, Serverkennung, HTTP-Header und Versionsregressionen sind auf v0.4.0 synchronisiert. Dieser Stand wird erst nach einem vollständig grünen unveränderten PR-Head, Squash-Merge und erneuter Nachvalidierung auf `main` endgültig freigegeben.
 
 ## Funktionsumfang v0.4.0
 - verbindlicher R3-Plan vor Implementierung,
@@ -55,29 +52,28 @@ Eine aktive Regel kann Dateiendungen, Suchwörter und/oder Kategorie kombinieren
 - Resume eines Sortierjobs startet zusätzlich einen echten Scanner-Worker.
 - der HTTP-Server bleibt während eines Scans ansprechbar.
 
-## Reale automatische Evidenz vor Release-Promotion
-Auf Implementierungshead `693ebbbf0124bb94db20a995877f06fa95f796f2`:
+## Bisherige automatische Evidenz
+Auf dem vollständig integrierten Implementierungshead `693ebbbf0124bb94db20a995877f06fa95f796f2` vor der Versionspromotion:
 - Release-Gate Run 56: 🟢 alle 17 sichtbaren Stufen erfolgreich,
 - Gesamt-Discovery: **76 Tests grün**,
 - Scanner-Regressionsgruppe: **12 Tests grün**,
-- HTTP-API-Vertrag: **11 Tests grün**, einschließlich asynchronem Sortierstart, Paging, Root-Symlink-Blockierung und Resume-Worker,
-- UX-Vertrag: **9 Tests grün**, einschließlich read-only Wortlaut, sichere Defaults, Lazy-Loading, Konflikt-/Skip-Anzeige und fehlender Executor-Schnittstelle.
+- HTTP-API-Vertrag: **11 Tests grün**,
+- UX-Vertrag: **9 Tests grün**.
 
 Der erste Scanner-Zwischenlauf fand einen Fehler ausschließlich im Test-Doppelgänger für `os.scandir()`: Der Fake-Iterator war nicht iterierbar. Die Produktlogik wurde nicht geändert; der Test wurde an den echten Iteratorvertrag angepasst und der vollständige Prüfpfad danach erfolgreich wiederholt.
 
-## Noch offen vor endgültiger Freigabe
-1. Produkt-/Manifest-/Serverversion auf v0.4.0 promovieren,
-2. Changelog und Versionsverträge auf den Release Candidate umstellen,
-3. finalen PR-Head vollständig über 17 Release-Stufen + sieben Subagent-Gates prüfen,
-4. Draft-PR erst danach freigabefähig markieren,
-5. Squash-Merge nur auf unverändertem geprüftem Head,
-6. dieselben Gates erneut auf `main`,
-7. reale Snapshotrotation nach Merge und tatsächliche Commit-Zuordnung im Manifest prüfen.
+## Releasebedingung für diesen Stand
+1. exakt den finalen v0.4.0-PR-Head über alle 17 Release-Stufen und sieben Subagent-Gates prüfen,
+2. Draft-PR erst danach freigabefähig markieren,
+3. Squash-Merge nur auf unverändertem geprüftem Head,
+4. dieselben Gates erneut auf `main`,
+5. Snapshotrotation nach Merge prüfen,
+6. finales Nutzer-ZIP aus genau dem nachvalidierten Hauptstand erzeugen und ZIP-Integrität + SHA-256 prüfen.
 
-## Letzter vollständig freigegebener Hauptstand
-Der aktuelle `main`-Stand vor v0.4.0 ist Commit `76c7d0a28d7a93391de860fc16ced706223dfbd8`.
+## Letzter vorheriger Hauptstand
+Der `main`-Stand vor v0.4.0 ist Commit `76c7d0a28d7a93391de860fc16ced706223dfbd8`.
 
-Die zugehörige reale Snapshotrotation enthält:
+Die vorherige reale Snapshotrotation enthält:
 - `previous-1.zip` → `1b889c2a12b6a640bb6015d72bb3a4c4054cfe9f`,
 - `previous-2.zip` → `5a075481f683cba3d411098cc3d21382283ae719`.
 

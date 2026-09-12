@@ -42,6 +42,8 @@ if quality.get("job_contract_test") != "tests/test_job_manager.py":
     errors.append("Jobmanager-Vertragstest fehlt")
 if quality.get("sorter_contract_test") != "tests/test_sorter_preview.py":
     errors.append("Sortier-Vorschau-Vertragstest fehlt")
+if quality.get("release_package_test") != "tests/test_release_package.py":
+    errors.append("Release-Paket-Vertragstest fehlt")
 backup = m.get("backup", {})
 if backup.get("strategy") != "verified-git-archive-snapshot-branch":
     errors.append("Backupstrategie muss verifizierte Git-Archive verwenden")
@@ -57,6 +59,17 @@ if backup.get("workflow_contract_test") != "tests/test_backup_workflow.py" or ba
     errors.append("Backup-Workflow-/Inhaltstests fehlen")
 if backup.get("database_verified_keep") != 2:
     errors.append("zwei verifizierte DB-Sicherungen erforderlich")
+package = m.get("release_package", {})
+if package.get("format") != "zip" or package.get("source") != "git-archive":
+    errors.append("Release-Paket muss als Git-Archiv-ZIP gebaut werden")
+if package.get("builder") != "scripts/build_release_package.py" or package.get("contract_test") != "tests/test_release_package.py":
+    errors.append("Release-Paket-Builder/Testvertrag fehlt")
+if package.get("artifact_name") != "PROVOWARE-HEADQUARTER-v0.4.0" or package.get("filename") != "PROVOWARE-HEADQUARTER-v0.4.0.zip":
+    errors.append("Release-Paketname muss v0.4.0 entsprechen")
+if package.get("prefix") != "PROVOWARE-HEADQUARTER-v0.4.0/":
+    errors.append("Release-ZIP benötigt einen eindeutigen v0.4.0-Wurzelordner")
+if package.get("sha256") is not True or package.get("zip_integrity_check") is not True:
+    errors.append("Release-Paket-Verifikation ist unvollständig")
 data = m.get("data", {})
 if data.get("engine") != "sqlite3" or data.get("schema_version") != 2 or data.get("journal_mode") != "WAL":
     errors.append("SQLite-Datenvertrag v2 verletzt")

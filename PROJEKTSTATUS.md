@@ -1,12 +1,17 @@
 # Projektstatus
 
-## Produktlaufzeit
+## Freigegebener Produktlaufzeitstand
 **v0.3.0 – Jobmanager & reversibles Aktionsjournal**
 
-## Status
-🟢 **Freigegeben** – Iteration 3 ist technisch auf `main` vollständig nachvalidiert. Der veröffentlichte Laufzeitstand ist Commit `1b889c2a12b6a640bb6015d72bb3a4c4054cfe9f`.
+## Aktive Entwicklung
+**v0.4.0 – Read-only Sortier-Analyse & Vorschau**
 
-## Freigegebene Basis
+## Status
+🔵 **In Entwicklung – Backend-Fundament angelegt, noch nicht freigegeben.**
+
+Der freigegebene Laufzeitstand bleibt v0.3.0. v0.4.0 wird erst dann als Produktversion geführt, wenn Scanner, localhost-API, Dateien-Assistent, Prozessfeedback, Dokumentation und vollständige PR-/main-Gates bestanden sind.
+
+## Freigegebene Basis aus v0.3.0
 - Expert Shell A–N,
 - SQLite-WAL-Datenkern, Todo, Kalender und reversibles Archiv,
 - Crash-/Recovery-Schutz,
@@ -17,73 +22,59 @@
 - persistenter Jobmanager mit Checkpoint/Resume und Watchdog,
 - reversibles Dateiaktionsjournal als Sicherheitsvertrag für kommende Datei-Workflows.
 
-## Iteration 3 – Jobkern
-- SQLite-Schema v2 in derselben Projektdatenbank,
-- verifizierte Sicherung vor bestehender Schema-Migration,
-- persistente Job-Zustandsmaschine,
-- Checkpoint/Resume, Heartbeat und Resume-Zähler,
-- zweistufige Pause/Abbruchsteuerung für aktive Worker,
-- automatischer Watchdog für stale Jobs,
-- Startup-/Shutdown-Recovery auf `interrupted`,
-- append-only Jobereignisse,
-- persistentes Dateiaktionsjournal mit `planned/applied/skipped/failed/undone`,
-- Undo-Kandidaten nur bei `applied` + `reversible=true`,
-- kein endgültiges Löschen und noch keine reale Dateioperation in diesem Iterationsschritt.
+## Iteration 4 – aktueller Backend-Stand
+Neu angelegt:
+- verbindlicher R3-Plan `docs/iterationen/ITERATION_04_SORTER_PREVIEW_PLAN.md`,
+- `app/sorter_preview.py` als getrennte read-only Scanner-/Regelgrenze,
+- persistente zeilenweise Scan-Ergebnisse in derselben Projekt-SQLite,
+- Feature-Schema v1 mit verifizierter DB-Sicherung vor erstmaliger Tabellenanlage,
+- Quellwurzel-Symlink-Schutz,
+- keine Symlink-Verfolgung innerhalb des Scans,
+- nicht-rekursiver Standard,
+- versteckte/System-/Cache-Inhalte standardmäßig ausgeschlossen,
+- deterministische Dateikategorien,
+- Regelpriorität und Konflikterkennung,
+- paginierte Vorschau und Scan-Zusammenfassung im Service,
+- tolerantes Überspringen verschwundener/unlesbarer Einträge,
+- Scanner als R3 im Agenten-Risikogate,
+- eigene Regression `tests/test_sorter_preview.py`,
+- eigene sichtbare Sortier-Stufe im Release-Gate.
 
-## Sicherheitsentscheidung
-Das Aktionsjournal ist bewusst **kein Datei-Executor**. Es darf keine Dateiänderung vortäuschen. Ein späterer Executor muss Quelle und Ziel unmittelbar vor und nach jeder realen Aktion validieren und darf erst danach `applied` setzen. Für Undo gilt dasselbe: erst reale inverse Operation plus Nachvalidierung, dann `undone`.
+## Sicherheitsentscheidung für v0.4.0
+Der Scanner darf Nutzdateien ausschließlich über Dateisystem-Metadaten betrachten. Er enthält keine Funktion zum Kopieren, Verschieben, Umbenennen oder Löschen. Schreibzugriffe erfolgen nur auf PROVOWARE-eigene Projektzustände wie SQLite-Scanindex, Jobstatus und Logs.
 
-## Server / Watchdog
-`AppContext` verwendet ein gemeinsames Service-Lock für Datenkern und Jobmanager. Der Watchdog läuft als Daemon, prüft Heartbeats regelmäßig und setzt veraltete aktive Jobs auf `interrupted`; automatische Fortsetzung erfolgt nicht.
+Die spätere Datei-Ausführung bleibt eine getrennte Ausbaustufe und darf erst nach erfolgreicher Vorschau-/Konfliktfreigabe entstehen.
 
-## API
-Freigegeben sind:
-- `GET /api/jobs`
-- `GET /api/jobs/summary`
-- `GET /api/jobs/<id>`
-- `GET /api/jobs/<id>/events`
-- `GET /api/jobs/<id>/actions`
-- `GET /api/jobs/<id>/undo-candidates`
-- `POST /api/jobs`
-- `POST /api/jobs/<id>/pause`
-- `POST /api/jobs/<id>/resume`
-- `POST /api/jobs/<id>/cancel`
+## Regelvertrag
+Eine aktive Regel kann Dateiendungen, Suchwörter und/oder Kategorie kombinieren. Innerhalb einer Liste gilt ODER, zwischen gesetzten Bedingungsarten UND. Höhere Prioritätszahl gewinnt. Haben die stärksten Treffer dieselbe Priorität, aber unterschiedliche Zielgruppen, wird die Datei als `conflict` markiert. Es wird keine Zielgruppe geraten.
 
-Worker-interne Start-, Checkpoint-/Heartbeat-, Bestätigungs-, Abschluss- und Fehlerfunktionen bleiben Python-intern. Der Server bleibt localhost-only.
+## Robustheitsvertrag
+- Einzelne `OSError`-/Permission-/Verschwunden-Fälle brechen den Gesamtscan nicht ab.
+- Symlinks werden sichtbar als übersprungen protokolliert und niemals traversiert.
+- Scanresultate werden in Batches gespeichert.
+- vorhandener Jobmanager bleibt alleiniger Eigentümer von Pause/Resume/Abbruch/Heartbeat/Checkpoint.
+- Crash-/Restart-Zustände bleiben über `interrupted` sichtbar; keine stille automatische Fortsetzung.
 
-## Automatische Release-Evidenz
-### Pull Request
-- finaler PR-Head `16e4461f004af989484e75606e0e2933fa644630`,
-- finales PR Release-Gate: 🟢 alle 16 sichtbaren Stufen erfolgreich,
-- finale PR Subagent-Gates: 🟢 alle sieben Rollen erfolgreich,
-- automatische Gesamt-Discovery: **57 Tests grün**.
+## Noch offen vor v0.4.0-Freigabe
+1. neue Scanner-/Regeltests im realen GitHub-Gate ausführen und jeden Fehler ursachenbasiert beheben,
+2. localhost-only API für Quellordnerwahl, Scanstart, Summary und Paging anbinden,
+3. Dateien-Modul als laienverständlichen Vorschau-Assistenten anbinden,
+4. globale Prozessanzeige mit Scanfortschritt und Überspringgründen verbinden,
+5. Hilfe/Architektur/Qualitätsdoku/Testübersicht synchronisieren,
+6. finalen PR-Head vollständig über Release-Gate + sieben Subagent-Gates prüfen,
+7. Squash-Merge nur auf unverändertem geprüften Head,
+8. dieselben Gates erneut auf `main`,
+9. reale Snapshotrotation nach Merge prüfen.
 
-### Nach Squash-Merge auf `main`
-- veröffentlichter Stand: `1b889c2a12b6a640bb6015d72bb3a4c4054cfe9f`,
-- Release-Gate Run 42 (`34701526931`): 🟢 alle 16 Stufen erfolgreich,
-- Subagent-Gates Run 40 (`34701526950`): 🟢 Analyse, Risiko, Fehlerursache, Plan, Regression, Plan-Prüfung und Release-Prüfung erfolgreich,
-- Snapshot-Backup Run 15 (`34701526895`): 🟢 Erzeugung, Veröffentlichung und Nachvalidierung erfolgreich.
+## Letzter vollständig geprüfter Hauptstand
+Der aktuelle `main`-Dokumentationsstand ist Commit `76c7d0a28d7a93391de860fc16ced706223dfbd8`. Dessen Release-Gate, sieben Subagent-Gates und Backupworkflow wurden erfolgreich nachvalidiert.
 
-## Tatsächliche Rückfallstände nach v0.3.0
-`backup/snapshots/version-backups/manifest.json` wurde nach dem Merge real geprüft:
-
-- `previous-1.zip` → Commit `5a075481f683cba3d411098cc3d21382283ae719`
-  - SHA-256: `744296cb41ab5f190c1d20fc7fe264ab2ecca12f3c0364ba77de211352d7a02f`
-- `previous-2.zip` → Commit `597f2337bba4eb961b61a4455db4b00824716b69`
-  - SHA-256: `5dbb42abad0bb955302387d9d68ee0b00ebbd0eb644d929cd407545f4b49c9c2`
-
-Beide ZIPs wurden vom Backupworkflow auf Integrität geprüft. Ihre Commit-Zuordnung entspricht der tatsächlichen ersten Elternhistorie von `main` unmittelbar vor v0.3.0.
+Die reale Snapshotrotation nach diesem Stand enthält:
+- `previous-1.zip` → `1b889c2a12b6a640bb6015d72bb3a4c4054cfe9f`,
+- `previous-2.zip` → `5a075481f683cba3d411098cc3d21382283ae719`.
 
 ## Bekannte externe Schutzlücke
 `main` ist repositoryseitig weiterhin **nicht** durch Branch-Protection/Ruleset geschützt. Automatische Gates sind aktiv, können einen ausreichend berechtigten direkten Push aber nicht technisch verhindern. Dieser Punkt bleibt in `docs/OFFENE_RISIKEN.md` dokumentiert.
-
-## Nächster Produktivschritt
-Als nächste Ausbaustufe folgt der Dateisortier-Workflow. Aus Sicherheitsgründen wird er in zwei Stufen aufgebaut:
-
-1. **read-only Analyse + Regeln + Konflikterkennung + Vorschau/Trockenlauf**, ohne Nutzdateien zu verändern,
-2. erst danach **sicherer Executor für Kopieren/Verschieben + Undo**, auf Basis des jetzt freigegebenen Job-/Journalfundaments.
-
-Damit wird reale Dateiänderung erst eingeführt, wenn die Vorschau- und Konfliktlogik automatisch belastbar geprüft ist.
 
 ## Nutzer-Abnahme
 Nicht erforderlich. Der Nutzer ist Anwender und keine reguläre Testinstanz; technische Freigabe basiert auf automatischer Evidenz.

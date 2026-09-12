@@ -81,7 +81,7 @@ class ApiContractTests(unittest.TestCase):
     def test_health_reports_runtime_version(self):
         status, payload = self.request("/api/health")
         self.assertEqual(status, 200)
-        self.assertEqual(payload["version"], "0.3.0")
+        self.assertEqual(payload["version"], "0.4.0")
 
     def test_todo_calendar_archive_restore_contract(self):
         self.create_project()

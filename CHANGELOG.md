@@ -1,64 +1,41 @@
 # Changelog
 
+## 0.2.2 – 2026-09-12
+### Nutzerfreundlichkeit & Transparenz
+- zentrale globale Feedback-/Prozessschicht statt verteilter Einzelmeldungen.
+- immer sichtbarer Gesamtstatus mit aktueller Aktion und optional realem Fortschritt.
+- einheitliche Zähler für OK, Hinweise, Fehler und Übersprungen.
+- unbekannte Gesamtmengen zeigen „läuft“ statt erfundener Prozentwerte.
+- Toast-Rückmeldung und globale Screenreader-Live-Region.
+- Skip-Link direkt zum Hauptarbeitsbereich.
+- Laienführung „Nächster sinnvoller Schritt“ abhängig von Projekt-/Sicherheitsstatus.
+- Schriftregler bis 200 % und zusätzlicher Kontrast+-Modus unabhängig vom Theme.
+- normale Bedienelemente auf mindestens 44 px Zielhöhe gehärtet.
+- Navigation setzt `aria-current`; Hauptarbeitsbereich erhält kontrolliertes Fokusmanagement.
+- Busy-Zustände verhindern Mehrfachauslösung bei Projektanlage, Self-Repair und Schnellspeicher.
+- Diagnosebereich K klarer benannt und Logfläche vergrößert.
+
+### Prozessstandard
+- neuer verbindlicher `docs/UX_STANDARD.md`.
+- künftige Datei-/Batchfunktionen müssen Phase, Fortschritt, OK/Hinweis/Fehler/Übersprungen und Überspringgrund ausgeben.
+- riskante Dateiaktionen folgen Analyse → Regeln → Konfliktprüfung → Vorschau/Trockenlauf → Bestätigung → Ausführung → Ergebnis → Undo/Recovery.
+- kein stilles Überschreiben und kein endgültiges Löschen als Standard.
+
+### Qualität
+- eigener UX-Vertragstest für Feedback, 200-%-Skalierung, Kontrast+, Prozesslebenszyklus und Datei-Sicherheitsvertrag.
+- Release-Workflow zeigt UX-Vertrag als separates Gate.
+- bestehende Shell-, Datenkern-, Crash-/Recovery-, Self-Repair-, API- und Agentenregression bleibt vollständig erhalten.
+
 ## 0.2.1 – 2026-09-12
 ### Robustheit & Self-Repair
-- neue getrennte `app/self_repair.py`-Schicht für ausschließlich sichere, reversible Reparaturen.
-- beschädigte `config.json` kann aus einer verifizierten `.tmp`, `.bak1` oder `.bak2` wiederhergestellt werden; das beschädigte Original bleibt in Quarantäne.
-- fehlende Standard-Projektordner werden nur nach vollständiger Projektmarker-Prüfung neu angelegt.
-- ungültige Projektmarker, Dateikollisionen und mehrdeutige Zustände werden nicht automatisch verändert.
-- konfigurierter Projektpfad und tatsächlich freigegebener Projektpfad sind getrennt; fehlerhafte Projekte bleiben diagnostizierbar, aber für Fachzugriffe gesperrt.
-- Symlinks an Projektmarker oder Standardordnern werden als Projektgrenzen-Verletzung blockiert und nicht verfolgt.
-- kritische JSON-Schreibvorgänge synchronisieren nach atomarem Replace auch das Elternverzeichnis, soweit vom Dateisystem unterstützt.
-- Self-Repair-Ereignisse werden append-only als JSONL protokolliert.
-
-### Fehlerbehandlung
-- stabile lokale API-Fehlercodes für Validierung, Konflikt, Berechtigung, NotFound, Datenintegrität und interne Fehler.
-- interne Fehlerdetails/Stacktraces bleiben im Log und werden nicht an die UI ausgegeben.
-- `GET /api/self-repair/status` diagnostiziert ohne Änderungen.
-- `POST /api/self-repair/run` führt ausschließlich Allowlist-Reparaturen aus; blockierende Zustände bleiben unverändert.
-- grafische Startroutine unterscheidet jetzt sicher repariert, Hinweis und blockierend; blockierende Datenzustände bleiben rot, während die Diagnoseoberfläche erreichbar bleibt.
-- Bereich K erhält „🛠 Sicher reparieren“ mit verständlicher Statusmeldung.
-
-### Agenten & Qualität
-- `AGENTS.md` auf Entwicklungsordnung v2 mit Prioritäten, Triggern, Self-Repair-Allowlist/Denylist und Risikomodell R0–R4 erweitert.
-- sieben getrennte Prüfrollen: Analyse, Risiko, Fehlerursache, Planung, Regression, Plan-Prüfung und Release-Prüfung.
-- Prüfrollen sind read-only gegenüber Produktivcode; Umsetzung bleibt getrennt.
-- risikobasiertes `scripts/agent_gate.py`: R3 erzwingt verstärkte Regression, R4 ist standardmäßig blockiert.
-- Entfernen von Produktiv-, Test- oder Qualitätsverträgen wird als R4 erkannt.
-- `scripts/validate_agents.py` prüft Rollenverträge, Manifest und Workflow-Verdrahtung maschinenlesbar.
-- Release-Gate prüft nun Struktur, Manifest, Agentenverträge, Python-/JavaScript-Syntax, vollständige Regression und Diff-Hygiene.
-- neue Regressionstests für Konfigurations-Recovery, Quarantäne, Fremdordner-/Symlink-Schutz, Projektstruktur-Reparatur, Self-Repair-API und Risikoklassifikation.
+- getrennte `app/self_repair.py`-Schicht für sichere, reversible Reparaturen.
+- verifizierte Config-Recovery mit Quarantäne, strikte Projektmarker-/Strukturprüfung und Symlink-Schutz.
+- stabile API-Fehlercodes und grafischer Self-Repair in Bereich K.
+- AGENTS.md v2 mit sieben Prüfrollen und Risikomodell R0–R4.
+- R4 wird standardmäßig blockiert; Test-/Qualitätsverträge sind gegen stilles Entfernen geschützt.
 
 ## 0.2.0 – 2026-09-12
-### Neu
-- zentraler SQLite-Datenkern in eigener Serviceschicht.
-- WAL-Modus, Foreign Keys, Busy Timeout, Schema-Versionierung und explizite Transaktionen.
-- Todo-Bereich D mit optionalem Datum, optionaler Uhrzeit und Priorität.
-- Abhaken verschiebt Todos reversibel ins Archiv; Wiederherstellung ist möglich.
-- Monatskalender E liest Termine direkt aus derselben Todo-Tabelle, ohne Doppelhaltung.
-- Organisationsübersicht zeigt aktive/archivierte Todos und DB-Sicherungen.
-- Datenkernprüfung in der grafischen Startroutine.
-
-### Sicherheit & Recovery
-- SQLite-Sicherungen werden mit der Backup-API erzeugt und vor Freigabe geprüft.
-- maximal zwei aktuelle verifizierte Datenbank-Sicherungen.
-- beschädigte Datenbank wird vor Recovery als Quarantäne erhalten.
-- automatische Recovery ausschließlich aus verifizierter Sicherung.
-- Crash-, Restart-/Persistenz-, Rollback-, Recovery- und API-Vertragstests ergänzt.
-- ursprüngliche Expert-Shell-Regression bleibt Bestandteil des Release-Gates.
+- SQLite-WAL-Datenkern, Todo D, Kalender E, reversibles Archiv und verifizierte Recovery.
 
 ## 0.1.0 – 2026-09-12
-### Neu
-- Expert Shell mit A–N-Dashboard und dominantem Hauptarbeitsbereich N.
-- echte, gewichtete grafische Startpipeline.
-- fünf Themes und drei Bedienebenen.
-- lokaler Python-Server ohne externe Runtime-Abhängigkeiten.
-- sicherer Projektassistent und projektbezogener Schnellspeicher.
-- Hilfesystem, Status-/Loggingbereich und Fokusmodus.
-- triggerbasierte Agentenrollen und deterministische CI-Gates.
-- rotierende Rückfallzweige für zwei vorherige `main`-Versionen.
-
-### Sicherheit
-- localhost-only Server.
-- atomare JSON-Speicherung mit zwei Vorgängerkopien.
-- fremde nichtleere Zielordner werden nicht automatisch übernommen.
+- Expert Shell A–N, echte Startpipeline, fünf Themes, drei Bedienebenen, Projektassistent und Qualitätsgrundlage.

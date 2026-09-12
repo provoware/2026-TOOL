@@ -11,15 +11,29 @@ spec.loader.exec_module(agent_gate)
 
 
 class AgentGateTests(unittest.TestCase):
-    def test_static_ui_change_is_r1(self):
+    def test_static_ui_change_is_r1_and_needs_regression(self):
         risk, _ = agent_gate.risk_level(["app/static/css/design.css"], [])
         self.assertEqual(risk, "R1")
+        self.assertTrue(agent_gate.requires_regression(risk, True))
 
-    def test_persistence_or_agent_contract_change_is_r3(self):
-        for path in ("app/data_core.py", "app/self_repair.py", "AGENTS.md", ".agents/RISIKO_AGENT.md"):
+    def test_persistence_backup_or_agent_contract_change_is_r3(self):
+        for path in (
+            "app/data_core.py",
+            "app/self_repair.py",
+            "scripts/build_backup_snapshots.py",
+            ".github/workflows/backup.yml",
+            "AGENTS.md",
+            ".agents/RISIKO_AGENT.md",
+        ):
             with self.subTest(path=path):
                 risk, _ = agent_gate.risk_level([path], [])
                 self.assertEqual(risk, "R3")
+                self.assertTrue(agent_gate.requires_regression(risk, True))
+
+    def test_docs_only_does_not_require_code_regression(self):
+        risk, _ = agent_gate.risk_level(["docs/HILFE.md"], [])
+        self.assertEqual(risk, "R0")
+        self.assertFalse(agent_gate.requires_regression(risk, False))
 
     def test_deleting_test_or_quality_contract_is_r4(self):
         for path in ("tests/test_data_core.py", "scripts/validate_all.sh", ".agents/PLAN_PRUEFER.md", "projekt-manifest.json"):

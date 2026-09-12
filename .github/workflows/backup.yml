@@ -2,69 +2,96 @@ name: Zwei Vorgängerversionen halten
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 permissions:
   contents: write
 
 jobs:
-  rotate:
+  verified-snapshots:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 4
-      - name: Zwei vorherige main-Stände bestimmen
-        id: refs
-        shell: bash
+          fetch-depth: 0
+
+      - name: Backup-Speicherzweig prüfen
         run: |
           set -euo pipefail
-          BEFORE="${{ github.event.before }}"
+          git ls-remote --exit-code --heads origin refs/heads/backup/snapshots >/dev/null || {
+            echo "BLOCKIERT: backup/snapshots fehlt. Dieser Zweig wird bewusst einmalig außerhalb des Actions-Tokens angelegt."
+            exit 1
+          }
+
+      - name: Zwei verifizierte Versions-Snapshots erzeugen
+        env:
+          EVENT_BEFORE: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          BEFORE="$EVENT_BEFORE"
           if [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]]; then
-            echo "skip=true" >> "$GITHUB_OUTPUT"
+            BEFORE="$(git rev-parse HEAD^1 2>/dev/null || true)"
+          fi
+          if [[ -z "$BEFORE" ]]; then
+            echo "SKIP_BACKUP=1" >> "$GITHUB_ENV"
+            echo "Kein vorheriger Hauptstand vorhanden; Snapshotrotation ist noch nicht erforderlich."
             exit 0
           fi
-          PREV2="$(git rev-parse "$BEFORE^1" 2>/dev/null || true)"
-          echo "skip=false" >> "$GITHUB_OUTPUT"
-          echo "previous1=$BEFORE" >> "$GITHUB_OUTPUT"
-          echo "previous2=$PREV2" >> "$GITHUB_OUTPUT"
-      - name: Backup-Refs über GitHub API rotieren
-        if: steps.refs.outputs.skip != 'true'
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PREVIOUS1: ${{ steps.refs.outputs.previous1 }}
-          PREVIOUS2: ${{ steps.refs.outputs.previous2 }}
-        shell: bash
+          echo "BACKUP_BEFORE=$BEFORE" >> "$GITHUB_ENV"
+          OUT="$RUNNER_TEMP/provoware-version-backups"
+          rm -rf "$OUT"
+          python3 scripts/build_backup_snapshots.py --repo . --before "$BEFORE" --out "$OUT"
+
+      - name: Snapshots auf backup/snapshots veröffentlichen
+        if: env.SKIP_BACKUP != '1'
         run: |
           set -euo pipefail
-          set_ref() {
-            local name="$1" sha="$2"
-            [[ -n "$sha" ]] || return 0
-            if ! gh api --silent --method PATCH \
-              "repos/${GITHUB_REPOSITORY}/git/refs/heads/${name}" \
-              -f sha="$sha" -F force=true; then
-              gh api --silent --method POST \
-                "repos/${GITHUB_REPOSITORY}/git/refs" \
-                -f ref="refs/heads/${name}" -f sha="$sha"
-            fi
-          }
-          set_ref "backup/previous-1" "$PREVIOUS1"
-          set_ref "backup/previous-2" "$PREVIOUS2"
-      - name: Backup-Refs nachvalidieren
-        if: steps.refs.outputs.skip != 'true'
-        env:
-          PREVIOUS1: ${{ steps.refs.outputs.previous1 }}
-          PREVIOUS2: ${{ steps.refs.outputs.previous2 }}
-        shell: bash
+          SOURCE="$RUNNER_TEMP/provoware-version-backups"
+          WORK="$RUNNER_TEMP/provoware-backup-branch"
+          rm -rf "$WORK"
+          git fetch origin backup/snapshots:refs/remotes/origin/backup/snapshots
+          git worktree add --detach "$WORK" refs/remotes/origin/backup/snapshots
+          cd "$WORK"
+
+          rm -rf version-backups
+          mkdir -p version-backups
+          cp -a "$SOURCE"/. version-backups/
+
+          git diff --exit-code -- .github/workflows
+          git add version-backups
+          UNEXPECTED="$(git diff --cached --name-only | grep -v '^version-backups/' || true)"
+          if [[ -n "$UNEXPECTED" ]]; then
+            echo "BLOCKIERT: unerwartete Änderungen außerhalb version-backups/:"
+            echo "$UNEXPECTED"
+            exit 1
+          fi
+
+          if git diff --cached --quiet; then
+            echo "Backup-Snapshots sind bereits aktuell."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Backup: rotate verified previous versions"
+          git push origin HEAD:refs/heads/backup/snapshots
+
+      - name: Ergebnis nachprüfen
+        if: env.SKIP_BACKUP != '1'
         run: |
           set -euo pipefail
-          verify_ref() {
-            local name="$1" expected="$2"
-            [[ -n "$expected" ]] || return 0
-            actual="$(git ls-remote origin "refs/heads/${name}" | awk '{print $1}')"
-            [[ "$actual" == "$expected" ]] || {
-              echo "FEHLER: ${name} erwartet ${expected}, erhalten ${actual:-NICHT_VORHANDEN}"
-              exit 1
-            }
-            echo "OK ${name} -> ${actual}"
-          }
-          verify_ref "backup/previous-1" "$PREVIOUS1"
-          verify_ref "backup/previous-2" "$PREVIOUS2"
+          git fetch origin backup/snapshots:refs/remotes/origin/backup/snapshots --force
+          git show origin/backup/snapshots:version-backups/manifest.json > "$RUNNER_TEMP/backup-manifest.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          manifest = json.loads(Path(os.environ['RUNNER_TEMP'], 'backup-manifest.json').read_text(encoding='utf-8'))
+          slots = manifest.get('slots', [])
+          if not slots:
+              raise SystemExit('BLOCKIERT: Backup-Manifest enthält keinen Snapshot.')
+          if slots[0].get('commit') != os.environ.get('BACKUP_BEFORE'):
+              raise SystemExit('BLOCKIERT: previous-1 stimmt nicht mit dem erwarteten Hauptstand überein.')
+          for item in slots:
+              if len(item.get('sha256', '')) != 64:
+                  raise SystemExit('BLOCKIERT: SHA-256 im Backup-Manifest ist ungültig.')
+          print(f"OK   {len(slots)} verifizierte Snapshot-Slots veröffentlicht.")
+          PY

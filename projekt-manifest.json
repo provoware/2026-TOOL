@@ -1,14 +1,18 @@
 {
   "agents": {
     "analysis": ".agents/ANALYSE_AGENT.md",
+    "risk": ".agents/RISIKO_AGENT.md",
+    "root_cause": ".agents/FEHLERURSACHE_AGENT.md",
+    "planning": ".agents/PLAN_AGENT.md",
+    "regression": ".agents/REGRESSIONS_AGENT.md",
     "compliance": ".agents/PLAN_PRUEFER.md",
-    "planning": ".agents/PLAN_AGENT.md"
+    "release": ".agents/RELEASE_PRUEFER.md"
   },
   "app": {
     "id": "provoware-headquarter",
     "name": "PROVOWARE HEADQUARTER",
-    "status": "iteration-2-data-core",
-    "version": "0.2.0"
+    "status": "iteration-2.1-reliability-selfrepair",
+    "version": "0.2.1"
   },
   "backup": {
     "branches": ["backup/previous-1", "backup/previous-2"],
@@ -27,18 +31,27 @@
     "recovery": "verified-backup-with-quarantine",
     "schema_version": 1
   },
+  "error_handling": {
+    "stable_api_codes": true,
+    "unknown_internal_details_exposed": false,
+    "categories": ["VALIDATION", "NOT-FOUND", "CONFLICT", "PERMISSION", "DATA-INTEGRITY", "INTERNAL"]
+  },
   "iteration": {
-    "name": "Datenkern",
+    "name": "Reliability & Self-Repair",
     "number": 2,
-    "release": "0.2.0"
+    "stage": "2.1",
+    "release": "0.2.1"
   },
   "quality": {
+    "agent_contract_validation": "scripts/validate_agents.py",
     "crash_recovery_tests": true,
     "manual_user_acceptance_required": false,
     "post_validation": true,
     "pre_validation": true,
     "regression_required": true,
-    "release_gate": "scripts/validate_all.sh"
+    "release_gate": "scripts/validate_all.sh",
+    "risk_model": "R0-R4",
+    "self_repair_guarded": true
   },
   "runtime": {
     "bind": "127.0.0.1",
@@ -46,6 +59,23 @@
     "python_min": "3.10"
   },
   "schema_version": 1,
+  "self_repair": {
+    "automatic_scope": [
+      "verified-config-restore",
+      "quarantine-corrupt-config",
+      "recreate-missing-project-directories-after-marker-validation",
+      "verified-sqlite-recovery"
+    ],
+    "forbidden_scope": [
+      "delete-user-data",
+      "overwrite-user-data",
+      "invent-project-marker",
+      "adopt-foreign-nonempty-directory",
+      "restore-unverified-backup",
+      "auto-resolve-ambiguous-user-state"
+    ],
+    "log": "append-only-jsonl"
+  },
   "ui": {
     "areas": ["A","B","C","D","E","F","G","H","I","J","K","L","M","N"],
     "complexity_levels": ["laie","profi","experte"],

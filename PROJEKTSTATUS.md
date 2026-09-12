@@ -1,34 +1,43 @@
 # Projektstatus
 
 ## Version
-0.2.0 – Iteration 2 „Datenkern“
+0.2.1 – Iteration 2.1 „Reliability & Self-Repair“
 
 ## Status
-🟢 Freigabefähig – vollständiger Iterationsdiff hat GitHub Release-Gate sowie Analyse-, Plan- und Plan-Prüfer-Gates bestanden.
+🟡 Release Candidate – Implementierung und Regressionserweiterung abgeschlossen; finale GitHub-PR-Gates und anschließende `main`-Nachvalidierung stehen noch aus.
 
-## Automatisch validiert
-- SQLite WAL/Schema/Integrität
-- Transaktions-Rollback
-- Restart/Persistenz
-- simulierter Prozessabsturz mit uncommitteter Transaktion
-- verifizierte Sicherung und Korruptions-Recovery
-- Backup-Retention auf zwei DB-Sicherungen
-- Todo Archiv/Wiederherstellung
-- Kalenderprojektion aus derselben Todo-Datenquelle
-- HTTP-API-Vertrag Todo → Kalender → Archiv → Restore
-- Expert-Shell A–N, Themes, Projektisolation, Schnellspeicher und Hilfe
-- GitHub Release-Gate: bestanden
-- Subagent-Gates Analyse → Plan → Plan-Prüfung: bestanden
-- Nutzer-Abnahme: nicht erforderlich
+## Neue Schutzebenen
+- konservative Self-Repair-Schicht mit expliziter Allowlist/Denylist
+- verifizierte Konfigurations-Recovery mit Quarantäne
+- strikte Projektmarker- und Projektstrukturprüfung
+- Symlink-Schutz für Projektmarker und Standardordner
+- stabilere atomare JSON-Persistenz mit `fsync`
+- stabile lokale API-Fehlercodes ohne Offenlegung interner Stacktraces
+- Diagnose-Endpunkt ohne Änderungen und separater freigegebener Reparaturlauf
+- grafische rote Kennzeichnung blockierender, nicht sicher reparierbarer Zustände
 
-## Enthalten
-- getrennte Services für Projektpersistenz und SQLite-Datenkern
-- Todo D mit optionaler Terminierung und Priorität
-- reversibles Todo-Archiv
-- Monatskalender E ohne doppelte Terminspeicherung
-- Recovery mit Quarantäne des beschädigten Originals
-- Startprüfung für SQLite/WAL und unsauberen Sitzungszustand
-- verbindlicher Datenstandard und erweiterte Regression
+## Agentenmodell v2
+- Analyse-Agent
+- Risiko-Agent R0–R4
+- Fehlerursachen-Agent
+- Plan-Agent
+- Regressions-Agent
+- Plan-Prüfer
+- Release-Prüfer
+
+Alle Prüfrollen bleiben read-only gegenüber Produktivcode. R4 ist standardmäßig blockiert.
+
+## Automatische Prüfbasis
+- bestehende SQLite-WAL-/Transaktions-/Crash-/Recovery-Regression bleibt erhalten
+- Self-Repair-Regression für Konfigurationsrestore, Quarantäne, Fremdordner, fehlende Standardordner, Kollisionen und Symlinks ergänzt
+- API-Vertrag um Self-Repair-Status und sicheren Reparaturlauf erweitert
+- Shell-Regression um Projektmarker-/Self-Repair-Verträge ergänzt
+- Agent-Gate-Risikoklassifikation erhält eigene Regressionstests
+- `validate_agents.py` prüft Rollenverträge maschinenlesbar
+- vollständiges `validate_all.sh` bleibt zwingendes Release-Gate
 
 ## Freigaberegel
-Dieser Stand darf auf `main` übernommen werden. Nach dem Merge wird derselbe Release-Gate-Zyklus auf `main` erneut ausgeführt und die Zwei-Versionen-Backuprotation kontrolliert.
+Dieser RC darf erst nach erfolgreichem Pull-Request-Release-Gate sowie allen sieben Subagent-Gates auf `main` übernommen werden. Danach müssen dieselben Gates auf dem gemergten `main`-Commit erneut erfolgreich sein und die Zwei-Versionen-Backuprotation muss bestätigt werden.
+
+## Nutzer-Abnahme
+Nicht erforderlich. Fehlende automatische Evidenz darf nicht durch manuelles Nutzertesten ersetzt werden.

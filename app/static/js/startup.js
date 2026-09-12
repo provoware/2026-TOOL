@@ -4,38 +4,71 @@ window.addEventListener("load", () => {
     constructor() {
       this.results = [];
       this.steps = [
-        { id: "backend", label: "Lokalen Dienst prüfen", weight: 10, critical: true, run: () => this.fetchOk("/api/health") },
-        { id: "manifest", label: "Projektmanifest validieren", weight: 8, critical: true, run: () => this.manifest() },
-        { id: "config", label: "Konfiguration und Profil laden", weight: 10, critical: true, run: () => this.bootstrap() },
-        { id: "project", label: "Projektstatus prüfen", weight: 8, critical: false, run: () => this.project() },
-        { id: "data", label: "SQLite-Datenkern und Recovery prüfen", weight: 16, critical: false, run: () => this.dataCore() },
-        { id: "layout", label: "A–N-Oberfläche prüfen", weight: 10, critical: true, run: () => this.layout() },
-        { id: "themes", label: "Fünf Themes prüfen", weight: 7, critical: true, run: () => this.themes() },
-        { id: "storage", label: "Browser-Persistenz testen", weight: 8, critical: false, run: () => this.storage() },
+        { id: "backend", label: "Lokalen Dienst prüfen", weight: 8, critical: true, run: () => this.fetchOk("/api/health") },
+        { id: "manifest", label: "Projektmanifest validieren", weight: 7, critical: true, run: () => this.manifest() },
+        { id: "config", label: "Konfiguration und Profil laden", weight: 8, critical: true, run: () => this.bootstrap() },
+        { id: "repair", label: "Self-Repair und Schutzgrenzen prüfen", weight: 12, critical: false, run: () => this.selfRepair() },
+        { id: "project", label: "Projektstatus prüfen", weight: 7, critical: false, run: () => this.project() },
+        { id: "data", label: "SQLite-Datenkern und Recovery prüfen", weight: 15, critical: false, run: () => this.dataCore() },
+        { id: "layout", label: "A–N-Oberfläche prüfen", weight: 9, critical: true, run: () => this.layout() },
+        { id: "themes", label: "Fünf Themes prüfen", weight: 6, critical: true, run: () => this.themes() },
+        { id: "storage", label: "Browser-Persistenz testen", weight: 7, critical: false, run: () => this.storage() },
         { id: "help", label: "Hilfesystem prüfen", weight: 5, critical: false, run: () => this.help() },
-        { id: "modules", label: "Modulregister prüfen", weight: 8, critical: true, run: () => this.modules() },
-        { id: "session", label: "Sitzungs- und Crashstatus prüfen", weight: 10, critical: false, run: () => this.session() }
+        { id: "modules", label: "Modulregister prüfen", weight: 7, critical: true, run: () => this.modules() },
+        { id: "session", label: "Sitzungs- und Crashstatus prüfen", weight: 9, critical: false, run: () => this.session() }
       ];
       this.renderSteps();
     }
     $(id) { return document.getElementById(id); }
     renderSteps() { const list = this.$("startup-steps"); list.replaceChildren(); this.steps.forEach((step) => { const item = document.createElement("li"); item.id = `step-${step.id}`; item.textContent = `○ ${step.label}`; list.appendChild(item); }); }
     async fetchOk(url) { const response = await fetch(url, { cache: "no-store" }); if (!response.ok) throw new Error(`HTTP ${response.status}`); return { status: "ok" }; }
-    async manifest() { const response = await fetch("/api/manifest", { cache: "no-store" }); const data = await response.json(); if (!response.ok || data?.app?.version !== "0.2.0") throw new Error("Manifestversion passt nicht zur Anwendung."); return { status: "ok" }; }
+    async manifest() { const response = await fetch("/api/manifest", { cache: "no-store" }); const data = await response.json(); if (!response.ok || data?.app?.version !== "0.2.1") throw new Error("Manifestversion passt nicht zur Anwendung."); return { status: "ok" }; }
     async bootstrap() { await App.refreshBootstrap(); return { status: "ok" }; }
-    async project() { const project = App.state.bootstrap?.project; return project?.available ? { status: "ok" } : { status: "warn", message: "Noch kein Projekt eingerichtet." }; }
-    async dataCore() { if (!App.state.bootstrap?.project?.available) return { status: "warn", message: "Datenkern wartet auf Projekteinrichtung." }; const response = await fetch("/api/data/health", { cache: "no-store" }); const data = await response.json(); if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`); if (data.integrity !== "ok" || data.journal_mode !== "wal") throw new Error("SQLite-Datenkern ist nicht vollständig freigegeben."); return data.recovered ? { status: "warn", message: "Datenbank wurde aus geprüfter Sicherung wiederhergestellt." } : { status: "ok" }; }
+    async selfRepair() {
+      const startup = App.state.bootstrap?.self_repair;
+      const response = await fetch("/api/self-repair/status", { cache: "no-store" });
+      const data = await response.json();
+      if (!response.ok) return { status: "error", message: data.error || "Self-Repair-Status nicht verfügbar." };
+      if (data.blocking) return { status: "error", message: "Nicht eindeutig sicher reparierbarer Zustand; Fachzugriff bleibt gesperrt." };
+      if (startup?.changed) return { status: "warn", message: "Ein sicher reparierbarer Zustand wurde automatisch korrigiert und protokolliert." };
+      if (data.status === "warning") return { status: "warn", message: "Self-Repair meldet einen nichtkritischen Hinweis." };
+      return { status: "ok" };
+    }
+    async project() {
+      const project = App.state.bootstrap?.project;
+      if (project?.configured && project?.marker_valid === false) return { status: "warn", message: "Projektmarker ist ungültig; Projekt bleibt aus Sicherheitsgründen deaktiviert." };
+      if (project?.configured && project?.structure_valid === false) return { status: "warn", message: "Projektstruktur ist unvollständig oder unsicher; Fachzugriff bleibt bis zur sicheren Reparatur deaktiviert." };
+      return project?.available ? { status: "ok" } : { status: "warn", message: "Noch kein verfügbares Projekt eingerichtet." };
+    }
+    async dataCore() { if (!App.state.bootstrap?.project?.available) return { status: "warn", message: "Datenkern wartet auf ein vollständig validiertes Projekt." }; const response = await fetch("/api/data/health", { cache: "no-store" }); const data = await response.json(); if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`); if (data.integrity !== "ok" || data.journal_mode !== "wal") throw new Error("SQLite-Datenkern ist nicht vollständig freigegeben."); return data.recovered ? { status: "warn", message: "Datenbank wurde aus geprüfter Sicherung wiederhergestellt." } : { status: "ok" }; }
     async layout() { const found = [...document.querySelectorAll("[data-area]")].map((node) => node.dataset.area); const expected = "ABCDEFGHIJKLMN".split(""); const missing = expected.filter((area) => !found.includes(area)); if (missing.length) throw new Error(`Bereiche fehlen: ${missing.join(", ")}`); return { status: "ok" }; }
     async themes() { if (document.getElementById("theme-select").options.length !== 5) throw new Error("Theme-Registry unvollständig."); return { status: "ok" }; }
     async storage() { try { const key = "provoware.startupProbe"; const value = String(Date.now()); localStorage.setItem(key, value); if (localStorage.getItem(key) !== value) throw new Error(); localStorage.removeItem(key); return { status: "ok" }; } catch { return { status: "warn", message: "Browser-Persistenz eingeschränkt." }; } }
-    async help() { const response = await fetch("/static/help.json", { cache: "no-store" }); const data = await response.json(); return !Array.isArray(data.sections) || data.sections.length < 6 ? { status: "warn", message: "Hilfe ist unvollständig." } : { status: "ok" }; }
+    async help() { const response = await fetch("/static/help.json", { cache: "no-store" }); const data = await response.json(); return !Array.isArray(data.sections) || data.sections.length < 9 ? { status: "warn", message: "Hilfe ist unvollständig." } : { status: "ok" }; }
     async modules() { if (document.querySelectorAll("[data-module]").length < 5) throw new Error("Modulregister unvollständig."); return { status: "ok" }; }
     async session() { if (!App.state.bootstrap?.previous_unclean) return { status: "ok" }; if (App.state.bootstrap?.project?.available) { try { const response = await fetch("/api/data/health", { cache: "no-store" }); const data = await response.json(); if (response.ok && data.integrity === "ok") return { status: "warn", message: "Vorherige Sitzung war unsauber; SQLite-/WAL-Recovery wurde erfolgreich geprüft." }; } catch {} } return { status: "warn", message: "Vorherige Sitzung wurde nicht sauber beendet." }; }
     updateSummary() { const ok = this.results.filter((item) => item.status === "ok").length; const warnings = this.results.filter((item) => item.status === "warn").length; const errors = this.results.filter((item) => item.status === "error").length; this.$("sum-ok").textContent = `🟢 ${ok} OK`; this.$("sum-warn").textContent = `🟡 ${warnings} Hinweise`; this.$("sum-error").textContent = `🔴 ${errors} Fehler`; }
     progress(doneWeight, label) { const percent = Math.min(100, Math.round(doneWeight)); this.$("startup-bar").style.width = `${percent}%`; this.$("startup-percent").textContent = `${percent} %`; this.$("startup-current").textContent = label; }
-    async run() { this.results = []; this.renderSteps(); this.$("startup-actions").classList.add("hidden"); let done = 0, criticalFailed = false; for (const step of this.steps) { const row = this.$(`step-${step.id}`); row.className = "running"; row.textContent = `▶ ${step.label}`; this.progress(done, step.label); let result; try { result = await step.run(); } catch (error) { result = { status: "error", message: error.message || "Prüfung fehlgeschlagen." }; } this.results.push({ ...result, id: step.id }); row.className = result.status; row.textContent = `${result.status === "ok" ? "✓" : result.status === "warn" ? "!" : "×"} ${step.label}${result.message ? ` – ${result.message}` : ""}`; if (result.status === "error" && step.critical) criticalFailed = true; done += step.weight; this.progress(done, step.label); this.updateSummary(); }
+    async run() {
+      this.results = []; this.renderSteps(); this.$("startup-actions").classList.add("hidden"); let done = 0, criticalFailed = false;
+      for (const step of this.steps) {
+        const row = this.$(`step-${step.id}`); row.className = "running"; row.textContent = `▶ ${step.label}`; this.progress(done, step.label); let result;
+        try { result = await step.run(); } catch (error) { result = { status: "error", message: error.message || "Prüfung fehlgeschlagen." }; }
+        this.results.push({ ...result, id: step.id }); row.className = result.status; row.textContent = `${result.status === "ok" ? "✓" : result.status === "warn" ? "!" : "×"} ${step.label}${result.message ? ` – ${result.message}` : ""}`;
+        if (result.status === "error" && step.critical) criticalFailed = true;
+        done += step.weight; this.progress(done, step.label); this.updateSummary();
+      }
       if (criticalFailed) { this.$("startup-current").textContent = "Kritische Startprüfung fehlgeschlagen."; this.$("startup-actions").classList.remove("hidden"); App.log("Startprüfung blockiert: kritischer Fehler.", "error"); return; }
-      this.progress(100, "System ist freigegeben."); document.getElementById("system-status").textContent = this.results.some((item) => item.status === "warn") ? "Betriebsbereit mit Hinweis" : "Betriebsbereit"; await window.DataUI?.refreshAll(); setTimeout(() => { this.$("startup").classList.add("hidden"); if (!App.state.bootstrap?.project?.configured) document.getElementById("project-dialog").showModal(); }, 450); App.log("Automatische Startprüfung inklusive Datenkern abgeschlossen.", "ok"); }
+      const hasErrors = this.results.some((item) => item.status === "error");
+      const hasWarnings = this.results.some((item) => item.status === "warn");
+      this.progress(100, hasErrors ? "Oberfläche verfügbar – Fachzugriff teilweise gesperrt." : "System ist freigegeben.");
+      document.getElementById("system-status").textContent = hasErrors ? "Eingeschränkt – Prüfung erforderlich" : hasWarnings ? "Betriebsbereit mit Hinweis" : "Betriebsbereit";
+      const badge = document.getElementById("health-badge");
+      if (hasErrors) { badge.textContent = "🔴 Prüfung erforderlich"; badge.classList.remove("success"); }
+      await window.DataUI?.refreshAll();
+      setTimeout(() => { this.$("startup").classList.add("hidden"); if (!App.state.bootstrap?.project?.configured) document.getElementById("project-dialog").showModal(); }, 450);
+      App.log(hasErrors ? "Startprüfung abgeschlossen: unsicherer Fachzustand bleibt gesperrt." : "Automatische Startprüfung inklusive Self-Repair und Datenkern abgeschlossen.", hasErrors ? "error" : "ok");
+    }
   }
   const controller = new StartupController();
   document.getElementById("retry-start").addEventListener("click", () => controller.run());

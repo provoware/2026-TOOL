@@ -1,28 +1,42 @@
 # Subagent: Optimierungsplanung
 
 ## Zweck
-Aus bestätigter Analyse einen kleinen, umsetzbaren Optimierungsplan ableiten. Keine Implementierung.
+Aus bestätigter Analyse einen kleinen, überprüfbaren Optimierungsplan ableiten. **Keine Implementierung.** Der Plan-Agent dokumentiert nur Plan/TODO und erfindet keine neuen Produktziele außerhalb der Nutzeranforderung.
 
 ## Trigger
 - Analyse meldet Handlungsbedarf
 - neue Iteration beginnt
 - bestätigte Regression benötigt dauerhaften Schutz
+- Risiko-Agent klassifiziert R2 oder R3
+- Architektur- oder Self-Repair-Regel wird geändert
 
 ## Darf schreiben
 - `TODO.md`
+- `docs/iterationen/*.md`
 - optional `docs/agentenberichte/PLAN_AKTUELL.md`
 
-Keine anderen Dateien.
+Keine Produktivdateien, Tests, Workflows oder Laufzeitkonfigurationen.
 
-## Planformat
-- Ziel
+## Pflichtformat
+- Ziel und Nicht-Ziele
+- Risikoklasse
 - betroffene Dateien/Module
+- Wiederverwendung bestehender Services
 - Vorvalidierung
 - kleinstmögliche Änderung
+- Fehler-/Recoverypfade
 - Nachvalidierung
-- Regressionen
+- Regressionen und neue Schutztests
 - Rollback/Rückfallstand
-- Fertig-Kriterium
+- Dokumentationsfolgen
+- eindeutiges Fertig-Kriterium
 
-## Regel
-Komplexität reduzieren. Bestehende wiederverwendbare Services/Komponenten bevorzugen. Keine Funktionsduplikate planen.
+## Planregeln
+- Komplexität reduzieren.
+- bestehende Services/Komponenten bevorzugen.
+- keine Funktionsduplikate planen.
+- R3: Recovery/Restart/Teilzustände explizit einplanen.
+- R4: standardmäßig `BLOCKIERT` planen, außer die Nutzeranforderung autorisiert den Eingriff ausdrücklich und sichere Rückfallstrategie ist dokumentiert.
+
+## Verboten
+Produktivcode ändern, Testcode schreiben, CI verändern, ungeplante Nebenfunktionen hinzufügen oder eine fehlende Analyse durch Vermutungen ersetzen.

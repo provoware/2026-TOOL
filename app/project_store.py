@@ -10,6 +10,7 @@ import shutil
 import time
 
 from data_core import DataCore
+from self_repair import SelfRepairCoordinator
 
 APP_NAME = "PROVOWARE HEADQUARTER"
 PROJECT_DIRS = (
@@ -22,14 +23,33 @@ BLOCKED_BASE_PATHS = {
 }
 
 
+def _fsync_directory(path: Path) -> None:
+    try:
+        fd = os.open(path, os.O_RDONLY)
+    except OSError:
+        return
+    try:
+        os.fsync(fd)
+    except OSError:
+        pass
+    finally:
+        os.close(fd)
+
+
+def _copy_with_sync(source: Path, destination: Path) -> None:
+    shutil.copy2(source, destination)
+    with destination.open("rb") as handle:
+        os.fsync(handle.fileno())
+
+
 def atomic_write_json(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     bak1 = path.with_suffix(path.suffix + ".bak1")
     bak2 = path.with_suffix(path.suffix + ".bak2")
     if bak1.exists():
-        shutil.copy2(bak1, bak2)
+        _copy_with_sync(bak1, bak2)
     if path.exists():
-        shutil.copy2(path, bak1)
+        _copy_with_sync(path, bak1)
     temp = path.with_suffix(path.suffix + ".tmp")
     with temp.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, ensure_ascii=False, indent=2, sort_keys=True)
@@ -37,6 +57,7 @@ def atomic_write_json(path: Path, payload: dict) -> None:
         handle.flush()
         os.fsync(handle.fileno())
     os.replace(temp, path)
+    _fsync_directory(path.parent)
 
 
 def load_json(path: Path, default: dict) -> dict:
@@ -44,7 +65,7 @@ def load_json(path: Path, default: dict) -> dict:
         with path.open("r", encoding="utf-8") as handle:
             data = json.load(handle)
         return data if isinstance(data, dict) else default.copy()
-    except (OSError, json.JSONDecodeError):
+    except (OSError, json.JSONDecodeError, UnicodeError):
         return default.copy()
 
 
@@ -70,17 +91,46 @@ class ProjectStore:
             {"config_version": 1, "active_project": None, "profile": {"name": "Lokaler Nutzer"}},
         )
 
+    @staticmethod
+    def _project_marker_valid(path: Path) -> bool:
+        valid, _ = SelfRepairCoordinator.valid_project_marker(path)
+        return valid
+
+    @staticmethod
+    def _project_structure_valid(path: Path) -> bool:
+        valid, _ = SelfRepairCoordinator.project_structure_valid(path, PROJECT_DIRS)
+        return valid
+
+    def configured_project_path(self) -> Path | None:
+        active = self.config.get("active_project")
+        if not isinstance(active, dict):
+            return None
+        raw = active.get("path")
+        if not isinstance(raw, str) or not raw.strip():
+            return None
+        return Path(raw).expanduser().resolve(strict=False)
+
     def bootstrap(self) -> dict:
         active = self.config.get("active_project")
-        project_status = {"configured": False, "available": False, "path": None, "name": None}
-        if isinstance(active, dict) and active.get("path"):
-            path = Path(active["path"])
-            marker = path / ".provoware" / "project.json"
+        project_status = {
+            "configured": False,
+            "available": False,
+            "path": None,
+            "name": None,
+            "marker_valid": False,
+            "structure_valid": False,
+        }
+        path = self.configured_project_path()
+        if path is not None:
+            marker_valid = self._project_marker_valid(path)
+            structure_valid = self._project_structure_valid(path) if marker_valid else False
             project_status = {
                 "configured": True,
-                "available": path.is_dir() and marker.is_file(),
+                "available": path.is_dir() and marker_valid and structure_valid,
                 "path": str(path),
                 "name": active.get("name") or path.name,
+                "marker_valid": marker_valid,
+                "structure_valid": structure_valid,
             }
         return {
             "profile": self.config.get("profile", {"name": "Lokaler Nutzer"}),
@@ -88,10 +138,10 @@ class ProjectStore:
         }
 
     def active_project_path(self) -> Path | None:
-        project = self.bootstrap()["project"]
-        if not project["available"] or not project["path"]:
+        path = self.configured_project_path()
+        if path is None or not path.is_dir() or not self._project_structure_valid(path):
             return None
-        return Path(project["path"]).resolve(strict=False)
+        return path
 
     def create_project(self, base_path: str, name: str) -> dict:
         project_name = sanitize_project_name(name)
@@ -107,13 +157,23 @@ class ProjectStore:
             raise ValueError("Projektpfad verlässt die gewählte Projektbasis.")
 
         marker = target / ".provoware" / "project.json"
-        if target.exists() and any(target.iterdir()) and not marker.is_file():
-            raise FileExistsError("Zielordner ist nicht leer und noch kein PROVOWARE-Projekt.")
+        if target.exists() and any(target.iterdir()) and not self._project_marker_valid(target):
+            raise FileExistsError(
+                "Zielordner ist nicht leer oder besitzt keinen gültigen PROVOWARE-Projektmarker. "
+                "Aus Sicherheitsgründen wird er nicht automatisch übernommen."
+            )
 
         target.mkdir(parents=True, exist_ok=True)
         for dirname in PROJECT_DIRS:
-            (target / dirname).mkdir(exist_ok=True)
+            destination = target / dirname
+            if destination.is_symlink():
+                raise FileExistsError(f"Standardpfad '{dirname}' ist ein Symlink und wird aus Sicherheitsgründen nicht verwendet.")
+            if destination.exists() and not destination.is_dir():
+                raise FileExistsError(f"Standardpfad '{dirname}' ist bereits als Datei oder Sonderpfad vorhanden.")
+            destination.mkdir(exist_ok=True)
         marker.parent.mkdir(exist_ok=True)
+        if marker.parent.is_symlink() or marker.is_symlink():
+            raise FileExistsError("Projektmarker darf nicht über einen Symlink umgeleitet werden.")
         if not marker.exists():
             atomic_write_json(marker, {
                 "schema_version": 1,
@@ -121,6 +181,8 @@ class ProjectStore:
                 "created_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                 "app": APP_NAME,
             })
+        if not self._project_structure_valid(target):
+            raise RuntimeError("Projektstruktur bestand die Nachvalidierung nicht.")
 
         DataCore(target).ensure_ready()
         self.config["active_project"] = {"name": project_name, "path": str(target)}
@@ -130,7 +192,7 @@ class ProjectStore:
     def quick_save(self, title: str, text: str) -> Path:
         project_path = self.active_project_path()
         if project_path is None:
-            raise RuntimeError("Kein verfügbares Projekt eingerichtet.")
+            raise RuntimeError("Kein vollständig validiertes Projekt eingerichtet.")
         clean_title = re.sub(r"[^\w .-]+", "_", title.strip(), flags=re.UNICODE).strip(" .")
         if not clean_title:
             raise ValueError("Titel fehlt.")

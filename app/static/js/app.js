@@ -98,11 +98,23 @@ const App = (() => {
     $("app-version").textContent = `v${bootstrap.version}`;
     $("profile-name").textContent = bootstrap.profile?.name || "Lokaler Nutzer";
     const project = bootstrap.project;
+    const repair = bootstrap.self_repair;
     $("project-name").textContent = project?.configured ? (project.name || "Projekt") : "Nicht eingerichtet";
     $("project-path").textContent = project?.path || "Noch kein Projektordner";
     const badge = $("health-badge");
-    if (project?.available) { $("system-status").textContent = "Betriebsbereit"; badge.textContent = "🟢 Betriebsbereit"; badge.classList.add("success"); }
-    else { $("system-status").textContent = "Projekt einrichten"; badge.textContent = "🟡 Einrichtung"; badge.classList.remove("success"); }
+    if (repair?.blocking) {
+      $("system-status").textContent = "Prüfung erforderlich";
+      badge.textContent = "🔴 Sicherer Betrieb blockiert";
+      badge.classList.remove("success");
+    } else if (project?.available) {
+      $("system-status").textContent = repair?.changed ? "Automatisch repariert" : "Betriebsbereit";
+      badge.textContent = repair?.changed ? "🟡 Reparatur geprüft" : "🟢 Betriebsbereit";
+      badge.classList.toggle("success", !repair?.changed);
+    } else {
+      $("system-status").textContent = "Projekt einrichten";
+      badge.textContent = "🟡 Einrichtung";
+      badge.classList.remove("success");
+    }
   }
 
   function bindProject() {
@@ -119,6 +131,36 @@ const App = (() => {
         const data = await response.json(); if (!response.ok) throw new Error(data.error || "Projekt konnte nicht angelegt werden.");
         dialog.close(); await refreshBootstrap(); await window.DataUI?.refreshAll(); log("Projekt sicher angelegt, Datenkern initialisiert und validiert.", "ok");
       } catch (error) { box.textContent = error.message; box.classList.remove("hidden"); log(error.message, "error"); }
+    });
+  }
+
+  function bindSelfRepair() {
+    const button = $("self-repair-button");
+    const status = $("self-repair-state");
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      status.textContent = "Prüft sichere Reparaturmöglichkeiten …";
+      try {
+        const response = await fetch("/api/self-repair/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+        const data = await response.json();
+        if (!response.ok || data.blocking) {
+          status.textContent = "Nicht eindeutig sicher reparierbar – keine riskante Änderung durchgeführt.";
+          log("Self-Repair hat einen blockierenden Zustand unverändert gelassen.", "error");
+        } else if (data.changed) {
+          status.textContent = "Sichere Reparatur abgeschlossen und protokolliert ✓";
+          log("Self-Repair hat einen freigegebenen sicheren Zustand automatisch korrigiert.", "warn");
+        } else {
+          status.textContent = "Keine Reparatur nötig ✓";
+          log("Self-Repair-Prüfung: kein Eingriff erforderlich.", "ok");
+        }
+        await refreshBootstrap();
+        await window.DataUI?.refreshAll();
+      } catch (error) {
+        status.textContent = "Self-Repair konnte nicht ausgeführt werden.";
+        log(error.message || "Self-Repair fehlgeschlagen.", "error");
+      } finally {
+        button.disabled = false;
+      }
     });
   }
 
@@ -145,7 +187,7 @@ const App = (() => {
   }
 
   function bindHelp() { const dialog = $("help-dialog"); $("help-button").addEventListener("click", () => dialog.showModal()); $("close-help").addEventListener("click", () => dialog.close()); }
-  async function init() { applyPreferences(); bindPreferences(); bindNavigation(); bindQuickActions(); bindNotes(); bindProject(); bindQuickSave(); bindHelp(); await loadHelp(); if (window.DataUI) window.DataUI.init(); }
+  async function init() { applyPreferences(); bindPreferences(); bindNavigation(); bindQuickActions(); bindNotes(); bindProject(); bindSelfRepair(); bindQuickSave(); bindHelp(); await loadHelp(); if (window.DataUI) window.DataUI.init(); }
   return { init, refreshBootstrap, renderBootstrap, log, showWorkspace, state };
 })();
 window.addEventListener("DOMContentLoaded", () => App.init());

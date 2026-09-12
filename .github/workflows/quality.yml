@@ -5,12 +5,43 @@ on:
   pull_request:
 permissions:
   contents: read
+
 jobs:
   quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - name: Ausführbar machen
         run: chmod +x start.sh scripts/*.sh scripts/*.py
-      - name: Vollständiges Release-Gate
+      - name: 01 · Repository-Struktur
+        run: ./scripts/validate_repo.sh
+      - name: 02 · Manifest-Verträge
+        run: python3 scripts/validate_manifest.py
+      - name: 03 · Agentenverträge
+        run: python3 scripts/validate_agents.py
+      - name: 04 · Python-Syntax
+        run: >-
+          python3 -m py_compile
+          app/server.py app/project_store.py app/data_core.py app/self_repair.py
+          scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py
+          tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_agent_gate.py
+      - name: 05 · JavaScript-Syntax
+        run: |
+          node --check app/static/js/app.js
+          node --check app/static/js/data.js
+          node --check app/static/js/startup.js
+      - name: 06 · Shell-Regression
+        run: python3 -m unittest tests.test_shell -v
+      - name: 07 · Datenkern Crash/Recovery
+        run: python3 -m unittest tests.test_data_core -v
+      - name: 08 · Self-Repair-Regression
+        run: python3 -m unittest tests.test_self_repair -v
+      - name: 09 · HTTP-API-Vertrag
+        run: python3 -m unittest tests.test_api_contract -v
+      - name: 10 · Agenten-Risikogate
+        run: python3 -m unittest tests.test_agent_gate -v
+      - name: 11 · Gesamte Test-Discovery
+        run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+      - name: 12 · Vollständiges Release-Gate
         run: ./scripts/validate_all.sh

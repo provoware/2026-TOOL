@@ -20,7 +20,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 APP_ID = "provoware-headquarter"
 APP_NAME = "PROVOWARE HEADQUARTER"
-APP_VERSION = "0.2.1"
+APP_VERSION = "0.2.2"
 ROOT = Path(__file__).resolve().parents[1]
 APP_DIR = Path(__file__).resolve().parent
 STATIC_ROOT = APP_DIR / "static"
@@ -61,23 +61,44 @@ class AppContext:
         logger = logging.getLogger(APP_ID)
         logger.setLevel(logging.INFO)
         if not logger.handlers:
-            handler = RotatingFileHandler(log_dir / "server.log", maxBytes=1_000_000, backupCount=2, encoding="utf-8")
+            handler = RotatingFileHandler(
+                log_dir / "server.log",
+                maxBytes=1_000_000,
+                backupCount=2,
+                encoding="utf-8",
+            )
             handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(message)s"))
             logger.addHandler(handler)
         return logger
 
     def _log_repair_summary(self, report: RepairReport, source: str) -> None:
-        level = logging.ERROR if report.blocking else logging.WARNING if report.status in {"warning", "repaired"} else logging.INFO
-        self.logger.log(level, "Self-Repair %s: status=%s changed=%s blocking=%s events=%d", source, report.status, report.changed, report.blocking, len(report.events))
+        level = (
+            logging.ERROR
+            if report.blocking
+            else logging.WARNING
+            if report.status in {"warning", "repaired"}
+            else logging.INFO
+        )
+        self.logger.log(
+            level,
+            "Self-Repair %s: status=%s changed=%s blocking=%s events=%d",
+            source,
+            report.status,
+            report.changed,
+            report.blocking,
+            len(report.events),
+        )
 
     def bootstrap(self) -> dict:
         payload = self.store.bootstrap()
-        payload.update({
-            "app_id": APP_ID,
-            "app_name": APP_NAME,
-            "version": APP_VERSION,
-            "self_repair": self._last_repair.as_dict(),
-        })
+        payload.update(
+            {
+                "app_id": APP_ID,
+                "app_name": APP_NAME,
+                "version": APP_VERSION,
+                "self_repair": self._last_repair.as_dict(),
+            }
+        )
         return payload
 
     def data_core(self) -> DataCore:
@@ -131,7 +152,7 @@ class AppContext:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "PROVOWARE/0.2.1"
+    server_version = "PROVOWARE/0.2.2"
 
     @property
     def app(self) -> AppContext:
@@ -210,10 +231,15 @@ class Handler(BaseHTTPRequestHandler):
         try:
             data = self._read_json()
             if path == "/api/project/create":
-                project = self.app.store.create_project(str(data.get("base_path", "")), str(data.get("name", "")))
+                project = self.app.store.create_project(
+                    str(data.get("base_path", "")),
+                    str(data.get("name", "")),
+                )
                 repair = self.app.repair_after_project_change()
                 if repair.blocking:
-                    raise DataIntegrityError("Projekt wurde angelegt, bestand aber die automatische Nachvalidierung nicht.")
+                    raise DataIntegrityError(
+                        "Projekt wurde angelegt, bestand aber die automatische Nachvalidierung nicht."
+                    )
                 self._json(HTTPStatus.CREATED, {"project": project, "self_repair": repair.as_dict()})
                 return
             if path == "/api/self-repair/run":
@@ -222,7 +248,10 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(status, report.as_dict())
                 return
             if path == "/api/quick-save":
-                saved = self.app.store.quick_save(str(data.get("title", "")), str(data.get("text", "")))
+                saved = self.app.store.quick_save(
+                    str(data.get("title", "")),
+                    str(data.get("text", "")),
+                )
                 self._json(HTTPStatus.OK, {"saved": True, "path": str(saved)})
                 return
             if path == "/api/todos":
@@ -238,7 +267,11 @@ class Handler(BaseHTTPRequestHandler):
             match = re.fullmatch(r"/api/todos/(\d+)/(archive|restore)", path)
             if match:
                 todo_id = int(match.group(1))
-                item = self._data().archive_todo(todo_id) if match.group(2) == "archive" else self._data().restore_todo(todo_id)
+                item = (
+                    self._data().archive_todo(todo_id)
+                    if match.group(2) == "archive"
+                    else self._data().restore_todo(todo_id)
+                )
                 self._json(HTTPStatus.OK, {"todo": item})
                 return
             self._json(HTTPStatus.NOT_FOUND, {"error": "Unbekannter API-Endpunkt.", "code": "NOT-FOUND"})
@@ -248,10 +281,19 @@ class Handler(BaseHTTPRequestHandler):
     def _pick_project_base(self) -> None:
         picker = shutil.which("kdialog")
         if not picker:
-            self._json(HTTPStatus.NOT_IMPLEMENTED, {"error": "KDialog ist nicht verfügbar.", "fallback": str(Path.home()), "code": "PICKER-UNAVAILABLE"})
+            self._json(
+                HTTPStatus.NOT_IMPLEMENTED,
+                {"error": "KDialog ist nicht verfügbar.", "fallback": str(Path.home()), "code": "PICKER-UNAVAILABLE"},
+            )
             return
         try:
-            result = subprocess.run([picker, "--getexistingdirectory", str(Path.home())], check=False, text=True, capture_output=True, timeout=120)
+            result = subprocess.run(
+                [picker, "--getexistingdirectory", str(Path.home())],
+                check=False,
+                text=True,
+                capture_output=True,
+                timeout=120,
+            )
         except (OSError, subprocess.TimeoutExpired) as exc:
             self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc), "code": "PICKER-ERROR"})
             return
@@ -274,7 +316,10 @@ class Handler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc), "code": "DATA-INTEGRITY"})
         else:
             self.app.logger.exception("Unbehandelter API-Fehler")
-            self._json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Interner Fehler. Details wurden protokolliert.", "code": "INTERNAL"})
+            self._json(
+                HTTPStatus.INTERNAL_SERVER_ERROR,
+                {"error": "Interner Fehler. Details wurden protokolliert.", "code": "INTERNAL"},
+            )
 
     def _serve_static(self, request_path: str) -> None:
         relative = "index.html" if request_path == "/" else unquote(request_path.lstrip("/"))
@@ -288,10 +333,14 @@ class Handler(BaseHTTPRequestHandler):
             self.send_error(HTTPStatus.NOT_FOUND)
             return
         mime = "application/octet-stream"
-        if candidate.suffix == ".html": mime = "text/html; charset=utf-8"
-        elif candidate.suffix == ".css": mime = "text/css; charset=utf-8"
-        elif candidate.suffix == ".js": mime = "text/javascript; charset=utf-8"
-        elif candidate.suffix == ".json": mime = "application/json; charset=utf-8"
+        if candidate.suffix == ".html":
+            mime = "text/html; charset=utf-8"
+        elif candidate.suffix == ".css":
+            mime = "text/css; charset=utf-8"
+        elif candidate.suffix == ".js":
+            mime = "text/javascript; charset=utf-8"
+        elif candidate.suffix == ".json":
+            mime = "application/json; charset=utf-8"
         raw = candidate.read_bytes()
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", mime)
@@ -321,6 +370,7 @@ def main() -> int:
     args = parser.parse_args()
     if args.host not in {"127.0.0.1", "localhost"}:
         parser.error("Aus Sicherheitsgründen ist nur localhost erlaubt.")
+
     app = AppContext()
     server = ThreadingHTTPServer((args.host, args.port), Handler)
     server.app = app
@@ -328,11 +378,14 @@ def main() -> int:
     url = f"http://{host}:{port}/"
     app.logger.info("Start %s %s auf %s", APP_NAME, APP_VERSION, url)
     print(f"{APP_NAME} {APP_VERSION}: {url}", flush=True)
+
     stop_event = threading.Event()
+
     def shutdown_handler(signum, frame):
         if not stop_event.is_set():
             stop_event.set()
             threading.Thread(target=server.shutdown, daemon=True).start()
+
     signal.signal(signal.SIGINT, shutdown_handler)
     signal.signal(signal.SIGTERM, shutdown_handler)
     if args.open_browser:

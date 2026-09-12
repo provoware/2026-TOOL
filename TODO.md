@@ -24,24 +24,32 @@
 10. [x] vollständigen Iterationsdiff durch unabhängiges GitHub-Release-Gate prüfen.
 11. [x] Analyse-, Plan- und Plan-Prüfer-Gates für den vollständigen Diff bestanden.
 
-## 🔵 Iteration 2.1 – Reliability & Self-Repair v0.2.1
-1. [ ] AGENTS.md v2 mit Risikoklassen, Trigger-Matrix, Self-Repair-Grenzen und Freigaberegeln.
-2. [ ] Analyse-, Risiko-, Fehlerursachen-, Plan-, Regressions-, Plan-Prüfer- und Release-Prüfer-Rollen sauber trennen.
-3. [ ] maschinenlesbare Agentenvertragsprüfung statt einfacher Text-Greps.
-4. [ ] zentrale sichere Self-Repair-Schicht mit Allowlist/Denylist.
-5. [ ] beschädigte Konfiguration nur aus verifizierter `.bak1`/`.bak2` restaurieren und Original quarantänisieren.
-6. [ ] Projektmarker strikt validieren; fremde/ungültige Projektordner niemals automatisch übernehmen.
-7. [ ] fehlende Standardordner nur in validierten PROVOWARE-Projekten selbst reparieren.
-8. [ ] SQLite-Recovery über bestehenden verifizierenden Datenkern integrieren.
-9. [ ] Self-Repair-Status/Run als lokale API und Startprüfung integrieren.
-10. [ ] Regressionstests für Konfig-Recovery, Kollisionen, Fremdordnerschutz, Quarantäne, API und Agentenverträge.
-11. [ ] Manifest, Hilfe, Architektur, Qualitätsdoku, Changelog und Projektstatus synchronisieren.
-12. [ ] vollständigen finalen Branch-Head und danach `main` automatisch validieren.
+## 🟢 Iteration 2.1 – Reliability & Self-Repair v0.2.1
+1. [x] AGENTS.md v2 mit Risikoklassen, Trigger-Matrix, Self-Repair-Grenzen und Freigaberegeln.
+2. [x] sieben getrennte Prüfrollen.
+3. [x] maschinenlesbare Agentenvertragsprüfung.
+4. [x] sichere Self-Repair-Schicht mit Allowlist/Denylist.
+5. [x] Konfigurations-Recovery mit Quarantäne.
+6. [x] Projektmarker-/Fremdordner-/Symlink-Schutz.
+7. [x] SQLite-Recovery und Regression.
+8. [x] PR #4 validiert und nach `main` gemergt.
+
+## 🟢 Iteration 2.2 – UX, Feedback & Transparenz v0.2.2
+1. [x] zentrales wiederverwendbares Feedback-/Prozesssystem.
+2. [x] permanente kompakte Prozessleiste ohne Layoutsprünge.
+3. [x] Warnungs-/Fehlerzähler und wichtige ARIA-Live-Rückmeldungen.
+4. [x] einheitliche Busy-Zustände gegen Doppelklick/Doppelausführung.
+5. [x] Zoom 100–200 % plus `Ctrl++`, `Ctrl+-`, `Ctrl+0` und `Ctrl+Mausrad`.
+6. [x] Skip-Link, Fokusführung und größere Standard-Aktionsziele.
+7. [x] Projekt, Self-Repair, Schnellspeicher und Todo an gemeinsames Feedback angebunden.
+8. [x] Hilfe um Status-/Prozessmodell ergänzt.
+9. [x] `docs/UX_STANDARD.md`, UX-Audit und UX-Vertragstests ergänzt.
+10. [x] Kandidaten-Release-Gate und sieben Agenten-Gates bestanden; v0.2.2 promoviert.
 
 ## Danach – nächste Fachausbaustufe
+- Download-/Dateisortier-Workflow als erster unmittelbar produktiver Laien-Workflow.
 - DB-Eingabemaske C als dynamisches Schema-/Formularsystem auf demselben Datenkern.
 - globale Suche H über Todo, Notizen, Schnellspeicher und spätere DB-Inhalte.
-- Organisationsbereich F weiter ausbauen, ohne Statistikduplikate zu erzeugen.
 
 ## Qualitätsregel
 Vor Umsetzung zuerst Analyse und dokumentierter Plan. Umsetzung danach automatisch validieren; Plan-Prüfer kontrolliert Abweichungen. Nutzer ist Anwender und nicht reguläre Test- oder Abnahmeinstanz.

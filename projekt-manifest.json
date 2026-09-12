@@ -7,7 +7,7 @@
   "app": {
     "id": "provoware-headquarter",
     "name": "PROVOWARE HEADQUARTER",
-    "status": "iteration-2-data-core-rc",
+    "status": "iteration-2-data-core",
     "version": "0.2.0"
   },
   "backup": {

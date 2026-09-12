@@ -64,12 +64,18 @@ class ApiContractTests(unittest.TestCase):
         self.assertTrue(payload["project"]["available"])
         return Path(payload["project"]["path"])
 
+    def test_health_reports_runtime_version(self):
+        status, payload = self.request("/api/health")
+        self.assertEqual(status, 200)
+        self.assertEqual(payload["version"], "0.3.0")
+
     def test_todo_calendar_archive_restore_contract(self):
         self.create_project()
         status, health = self.request("/api/data/health")
         self.assertEqual(status, 200)
         self.assertEqual(health["integrity"], "ok")
         self.assertEqual(health["journal_mode"], "wal")
+        self.assertEqual(health["schema_version"], 2)
 
         status, created = self.request(
             "/api/todos",
@@ -112,6 +118,66 @@ class ApiContractTests(unittest.TestCase):
         status, active = self.request("/api/todos?scope=all")
         self.assertEqual(status, 200)
         self.assertEqual(active["items"], [])
+
+    def test_job_api_create_control_and_read_only_journal_views(self):
+        self.create_project()
+        status, created = self.request(
+            "/api/jobs", "POST", {"kind": "file-sort", "payload": {"source": "/tmp/in"}}
+        )
+        self.assertEqual(status, 201)
+        job = created["job"]
+        job_id = job["id"]
+        self.assertEqual(job["status"], "queued")
+
+        status, listed = self.request("/api/jobs?status=queued")
+        self.assertEqual(status, 200)
+        self.assertEqual([item["id"] for item in listed["items"]], [job_id])
+
+        manager = self.app.job_manager()
+        manager.start_job(job_id)
+        status, pause = self.request(f"/api/jobs/{job_id}/pause", "POST", {})
+        self.assertEqual(status, 200)
+        self.assertEqual(pause["job"]["requested_control"], "pause")
+        manager.acknowledge_pause(job_id)
+
+        status, resumed = self.request(f"/api/jobs/{job_id}/resume", "POST", {})
+        self.assertEqual(status, 200)
+        self.assertEqual(resumed["job"]["status"], "running")
+
+        action = manager.plan_action(
+            job_id,
+            "move",
+            source_path="/tmp/in/a.txt",
+            destination_path="/tmp/out/a.txt",
+            reversible=True,
+        )
+        status, actions = self.request(f"/api/jobs/{job_id}/actions")
+        self.assertEqual(status, 200)
+        self.assertEqual(actions["items"][0]["id"], action["id"])
+        self.assertEqual(actions["items"][0]["status"], "planned")
+
+        status, cancelling = self.request(f"/api/jobs/{job_id}/cancel", "POST", {})
+        self.assertEqual(status, 200)
+        self.assertEqual(cancelling["job"]["status"], "cancelling")
+        manager.acknowledge_cancel(job_id)
+
+        status, fetched = self.request(f"/api/jobs/{job_id}")
+        self.assertEqual(status, 200)
+        self.assertEqual(fetched["job"]["status"], "cancelled")
+        status, events = self.request(f"/api/jobs/{job_id}/events")
+        self.assertEqual(status, 200)
+        event_names = [item["event_type"] for item in events["items"]]
+        for expected in ("created", "started", "pause-requested", "paused", "resumed", "action-planned", "cancel-requested", "cancelled"):
+            self.assertIn(expected, event_names)
+
+    def test_job_api_invalid_kind_returns_stable_validation_code(self):
+        self.create_project()
+        status, payload = self.request("/api/jobs", "POST", {"kind": "!!!", "payload": {}})
+        self.assertEqual(status, 400)
+        self.assertEqual(payload["code"], "VALIDATION")
+        status, jobs = self.request("/api/jobs")
+        self.assertEqual(status, 200)
+        self.assertEqual(jobs["items"], [])
 
     def test_self_repair_status_is_read_only_and_run_repairs_missing_standard_dir(self):
         project = self.create_project()

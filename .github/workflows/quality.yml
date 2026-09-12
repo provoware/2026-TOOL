@@ -25,7 +25,7 @@ jobs:
           python3 -m py_compile
           app/server.py app/project_store.py app/data_core.py app/self_repair.py
           scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py
-          tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_agent_gate.py tests/test_ux_contract.py
+          tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_agent_gate.py tests/test_ux_contract.py tests/test_backup_workflow.py
       - name: 05 · JavaScript-Syntax
         run: |
           node --check app/static/js/feedback.js
@@ -44,7 +44,9 @@ jobs:
         run: python3 -m unittest tests.test_agent_gate -v
       - name: 11 · UX / Feedback / Barrierefreiheit
         run: python3 -m unittest tests.test_ux_contract -v
-      - name: 12 · Gesamte Test-Discovery
+      - name: 12 · Backup-Rotationsvertrag
+        run: python3 -m unittest tests.test_backup_workflow -v
+      - name: 13 · Gesamte Test-Discovery
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
-      - name: 13 · Vollständiges Release-Gate
+      - name: 14 · Vollständiges Release-Gate
         run: ./scripts/validate_all.sh

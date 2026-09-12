@@ -20,7 +20,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 APP_ID = "provoware-headquarter"
 APP_NAME = "PROVOWARE HEADQUARTER"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.2.1"
 ROOT = Path(__file__).resolve().parents[1]
 APP_DIR = Path(__file__).resolve().parent
 STATIC_ROOT = APP_DIR / "static"
@@ -29,6 +29,7 @@ if str(APP_DIR) not in sys.path:
 
 from data_core import DataCore, DataIntegrityError, DataNotFoundError, DataValidationError
 from project_store import PROJECT_DIRS, ProjectStore, load_json
+from self_repair import RepairReport, SelfRepairCoordinator
 
 
 def _config_dir() -> Path:
@@ -38,13 +39,21 @@ def _config_dir() -> Path:
 
 class AppContext:
     def __init__(self) -> None:
-        self.store = ProjectStore(_config_dir())
+        self.config_dir = _config_dir()
+        self.repair = SelfRepairCoordinator(self.config_dir, PROJECT_DIRS)
+        self._last_repair = self.repair.repair_config()
+        self.store = ProjectStore(self.config_dir)
         self.previous_unclean = self.store.session_marker.exists()
         self.store.session_marker.write_text(str(os.getpid()), encoding="utf-8")
         self.logger = self._build_logger()
         self._data_lock = threading.RLock()
         self._data_path: Path | None = None
         self._data: DataCore | None = None
+
+        project_path = self.store.active_project_path()
+        if project_path is not None:
+            self._last_repair.extend(self.repair.repair_project(project_path, DataCore))
+        self._log_repair_summary(self._last_repair, "startup")
 
     def _build_logger(self) -> logging.Logger:
         log_dir = self.store.config_dir / "logs"
@@ -57,9 +66,18 @@ class AppContext:
             logger.addHandler(handler)
         return logger
 
+    def _log_repair_summary(self, report: RepairReport, source: str) -> None:
+        level = logging.ERROR if report.blocking else logging.WARNING if report.status in {"warning", "repaired"} else logging.INFO
+        self.logger.log(level, "Self-Repair %s: status=%s changed=%s blocking=%s events=%d", source, report.status, report.changed, report.blocking, len(report.events))
+
     def bootstrap(self) -> dict:
         payload = self.store.bootstrap()
-        payload.update({"app_id": APP_ID, "app_name": APP_NAME, "version": APP_VERSION})
+        payload.update({
+            "app_id": APP_ID,
+            "app_name": APP_NAME,
+            "version": APP_VERSION,
+            "self_repair": self._last_repair.as_dict(),
+        })
         return payload
 
     def data_core(self) -> DataCore:
@@ -77,6 +95,28 @@ class AppContext:
             self._data = None
             self._data_path = None
 
+    def diagnose_self_repair(self) -> RepairReport:
+        return self.repair.diagnose(self.store.active_project_path())
+
+    def run_self_repair(self) -> RepairReport:
+        report = self.repair.repair_config()
+        if any(event.code == "CONFIG_RESTORED" for event in report.events):
+            self.store = ProjectStore(self.config_dir)
+        project_path = self.store.active_project_path()
+        report.extend(self.repair.repair_project(project_path, DataCore))
+        self._last_repair = report
+        if not report.blocking:
+            self.invalidate_project_services()
+        self._log_repair_summary(report, "manual")
+        return report
+
+    def repair_after_project_change(self) -> RepairReport:
+        report = self.repair.repair_project(self.store.active_project_path(), DataCore)
+        self._last_repair = report
+        self.invalidate_project_services()
+        self._log_repair_summary(report, "project-change")
+        return report
+
     def clean_shutdown(self) -> None:
         try:
             with self._data_lock:
@@ -91,7 +131,7 @@ class AppContext:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "PROVOWARE/0.2"
+    server_version = "PROVOWARE/0.2.1"
 
     @property
     def app(self) -> AppContext:
@@ -139,10 +179,13 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/manifest":
                 manifest = load_json(ROOT / "projekt-manifest.json", {})
                 status = HTTPStatus.OK if manifest else HTTPStatus.INTERNAL_SERVER_ERROR
-                self._json(status, manifest or {"error": "Manifest fehlt oder ist ungültig."})
+                self._json(status, manifest or {"error": "Manifest fehlt oder ist ungültig.", "code": "MANIFEST"})
                 return
             if path == "/api/project/pick-base":
                 self._pick_project_base()
+                return
+            if path == "/api/self-repair/status":
+                self._json(HTTPStatus.OK, self.app.diagnose_self_repair().as_dict())
                 return
             if path == "/api/data/health":
                 self._json(HTTPStatus.OK, self._data().ensure_ready().as_dict())
@@ -168,9 +211,15 @@ class Handler(BaseHTTPRequestHandler):
             data = self._read_json()
             if path == "/api/project/create":
                 project = self.app.store.create_project(str(data.get("base_path", "")), str(data.get("name", "")))
-                self.app.invalidate_project_services()
-                self.app.data_core().ensure_ready()
-                self._json(HTTPStatus.CREATED, {"project": project})
+                repair = self.app.repair_after_project_change()
+                if repair.blocking:
+                    raise DataIntegrityError("Projekt wurde angelegt, bestand aber die automatische Nachvalidierung nicht.")
+                self._json(HTTPStatus.CREATED, {"project": project, "self_repair": repair.as_dict()})
+                return
+            if path == "/api/self-repair/run":
+                report = self.app.run_self_repair()
+                status = HTTPStatus.SERVICE_UNAVAILABLE if report.blocking else HTTPStatus.OK
+                self._json(status, report.as_dict())
                 return
             if path == "/api/quick-save":
                 saved = self.app.store.quick_save(str(data.get("title", "")), str(data.get("text", "")))
@@ -192,40 +241,40 @@ class Handler(BaseHTTPRequestHandler):
                 item = self._data().archive_todo(todo_id) if match.group(2) == "archive" else self._data().restore_todo(todo_id)
                 self._json(HTTPStatus.OK, {"todo": item})
                 return
-            self._json(HTTPStatus.NOT_FOUND, {"error": "Unbekannter API-Endpunkt."})
+            self._json(HTTPStatus.NOT_FOUND, {"error": "Unbekannter API-Endpunkt.", "code": "NOT-FOUND"})
         except Exception as exc:
             self._handle_api_exception(exc)
 
     def _pick_project_base(self) -> None:
         picker = shutil.which("kdialog")
         if not picker:
-            self._json(HTTPStatus.NOT_IMPLEMENTED, {"error": "KDialog ist nicht verfügbar.", "fallback": str(Path.home())})
+            self._json(HTTPStatus.NOT_IMPLEMENTED, {"error": "KDialog ist nicht verfügbar.", "fallback": str(Path.home()), "code": "PICKER-UNAVAILABLE"})
             return
         try:
             result = subprocess.run([picker, "--getexistingdirectory", str(Path.home())], check=False, text=True, capture_output=True, timeout=120)
         except (OSError, subprocess.TimeoutExpired) as exc:
-            self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc)})
+            self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc), "code": "PICKER-ERROR"})
             return
         selected = result.stdout.strip()
         self._json(HTTPStatus.OK, {"path": selected, "cancelled": not bool(selected)})
 
     def _handle_api_exception(self, exc: Exception) -> None:
         if isinstance(exc, FileExistsError):
-            self._json(HTTPStatus.CONFLICT, {"error": str(exc)})
+            self._json(HTTPStatus.CONFLICT, {"error": str(exc), "code": "PROJECT-CONFLICT"})
         elif isinstance(exc, PermissionError):
-            self._json(HTTPStatus.FORBIDDEN, {"error": str(exc)})
+            self._json(HTTPStatus.FORBIDDEN, {"error": str(exc), "code": "PERMISSION"})
         elif isinstance(exc, (DataValidationError, ValueError, json.JSONDecodeError)):
-            self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc)})
+            self._json(HTTPStatus.BAD_REQUEST, {"error": str(exc), "code": "VALIDATION"})
         elif isinstance(exc, DataNotFoundError):
-            self._json(HTTPStatus.NOT_FOUND, {"error": str(exc)})
+            self._json(HTTPStatus.NOT_FOUND, {"error": str(exc), "code": "NOT-FOUND"})
         elif isinstance(exc, RuntimeError) and not isinstance(exc, DataIntegrityError):
-            self._json(HTTPStatus.CONFLICT, {"error": str(exc)})
+            self._json(HTTPStatus.CONFLICT, {"error": str(exc), "code": "CONFLICT"})
         elif isinstance(exc, DataIntegrityError):
             self.app.logger.exception("Datenintegritätsfehler")
             self._json(HTTPStatus.SERVICE_UNAVAILABLE, {"error": str(exc), "code": "DATA-INTEGRITY"})
         else:
             self.app.logger.exception("Unbehandelter API-Fehler")
-            self._json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Interner Fehler. Details wurden protokolliert."})
+            self._json(HTTPStatus.INTERNAL_SERVER_ERROR, {"error": "Interner Fehler. Details wurden protokolliert.", "code": "INTERNAL"})
 
     def _serve_static(self, request_path: str) -> None:
         relative = "index.html" if request_path == "/" else unquote(request_path.lstrip("/"))

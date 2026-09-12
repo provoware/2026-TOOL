@@ -17,4 +17,4 @@ printf '\n[9/12] Backup-Workflow-Vertrag\n'; python3 -m unittest -v tests.test_b
 printf '\n[10/12] Backup-Snapshot-Inhalt\n'; python3 -m unittest -v tests.test_backup_snapshots
 printf '\n[11/12] Automatische Gesamtregression\n'; python3 -m unittest discover -s tests -p 'test_*.py' -v
 printf '\n[12/12] Repository-Diff-Hygiene\n'; git diff --check HEAD~1 HEAD || { printf '\nBLOCKIERT: letzter Commit enthält Whitespace-/Patchfehler.\n'; exit 1; }
-printf '\n🟢 RELEASE-GATE BESTANDEN – v0.3.0 stabil / Iteration 4 Sortier-Vorschau in Entwicklung\n'
+printf '\n🟢 RELEASE-GATE BESTANDEN – Iteration 4 / Read-only Sortier-Analyse & Vorschau v0.4.0 RC\n'

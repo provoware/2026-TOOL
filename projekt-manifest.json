@@ -7,23 +7,33 @@
   "app": {
     "id": "provoware-headquarter",
     "name": "PROVOWARE HEADQUARTER",
-    "status": "iteration-1-expert-shell",
-    "version": "0.1.0"
+    "status": "iteration-2-data-core-rc",
+    "version": "0.2.0"
   },
   "backup": {
-    "branches": [
-      "backup/previous-1",
-      "backup/previous-2"
-    ],
+    "branches": ["backup/previous-1", "backup/previous-2"],
+    "database_verified_keep": 2,
     "keep_previous": 2,
     "strategy": "rotating-git-branches"
   },
+  "data": {
+    "archive_strategy": "logical-reversible",
+    "backup_keep": 2,
+    "busy_timeout_ms": 5000,
+    "calendar_source": "todos",
+    "engine": "sqlite3",
+    "foreign_keys": true,
+    "journal_mode": "WAL",
+    "recovery": "verified-backup-with-quarantine",
+    "schema_version": 1
+  },
   "iteration": {
-    "name": "Expert Shell",
-    "number": 1,
-    "release": "0.1.0"
+    "name": "Datenkern",
+    "number": 2,
+    "release": "0.2.0"
   },
   "quality": {
+    "crash_recovery_tests": true,
     "manual_user_acceptance_required": false,
     "post_validation": true,
     "pre_validation": true,

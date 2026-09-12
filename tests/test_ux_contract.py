@@ -77,7 +77,7 @@ class UxContractTests(unittest.TestCase):
         self.assertIn("Dateiname enthält", self.sorter_js)
         self.assertIn("Dann Zielgruppe", self.sorter_js)
         self.assertIn("Vorrang", self.sorter_js)
-        self.assertIn("equal", self.sorter_js.lower() if "equal" in self.sorter_js.lower() else "equal")
+        self.assertIn("Gleich starke Regeln schlagen verschiedene Ziele vor.", self.sorter_js)
 
     def test_sorter_layout_is_responsive_and_has_stable_scroll_regions(self):
         for token in (".sorter-shell", ".sorter-table-wrap", "overflow:auto", "@media(max-width:700px)"):

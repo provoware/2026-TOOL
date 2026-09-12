@@ -1,12 +1,15 @@
 {
-  "version": 1,
+  "version": 2,
   "sections": [
-    {"title":"Erster Start","text":"Die Startanzeige prüft Dienst, Manifest, Einstellungen, Projekt, Oberfläche und Persistenz automatisch. Grün bedeutet bestanden, Gelb einen nichtkritischen Hinweis, Rot einen blockierenden Fehler."},
-    {"title":"Projekt einrichten","text":"Wähle einen Basisordner und einen Projektnamen. PROVOWARE legt darin einen eigenen Projektordner mit Standardstruktur an und verändert keine fremden Dateien im Basisordner."},
+    {"title":"Erster Start","text":"Die Startanzeige prüft Dienst, Manifest, Einstellungen, Projekt, SQLite-Datenkern, Oberfläche, Persistenz und Sitzungszustand automatisch. Grün bedeutet bestanden, Gelb einen nichtkritischen Hinweis, Rot einen blockierenden Fehler."},
+    {"title":"Projekt einrichten","text":"Wähle einen Basisordner und einen Projektnamen. PROVOWARE legt darin einen eigenen Projektordner mit Standardstruktur und geprüfter SQLite-Datenbank an. Fremde Dateien werden nicht still übernommen oder überschrieben."},
+    {"title":"Todo in Bereich D","text":"Gib eine Aufgabe ein. Datum und Uhrzeit sind optional. Mit dem runden Haken wird die Aufgabe nicht gelöscht, sondern sicher ins Archiv verschoben. Über Archiv kannst du sie wiederherstellen."},
+    {"title":"Kalender in Bereich E","text":"Der Monatskalender zeigt terminierte offene Todos direkt aus derselben Datenbank. Es gibt keine doppelte Terminablage. Zahlen im Kalendertag zeigen die Anzahl fälliger Aufgaben."},
+    {"title":"Datenkern und Recovery","text":"SQLite läuft im WAL-Modus mit Transaktionen. Vor Schemaänderungen und bei sauberem Beenden werden geprüfte Sicherungen erzeugt; maximal zwei werden gehalten. Erkennt PROVOWARE eine beschädigte Datenbank, wird nur aus einer vorher validierten Sicherung automatisch wiederhergestellt und die defekte Datei bleibt als Quarantäne erhalten."},
     {"title":"Bereiche A–N","text":"A informiert, B stellt die Oberfläche ein, C erfasst DB-Inhalte, D verwaltet Todo, E zeigt den Kalender, F organisiert, G wählt Module, H sucht, I zeigt das Projekt, J speichert Notizen, K zeigt Status, L enthält Schnellstarts, M speichert schnell und N ist der Hauptarbeitsbereich."},
-    {"title":"Laie, Profi, Experte","text":"Die Stufe verändert nur Informationsdichte und Bedienelemente. Sicherheitsprüfungen bleiben in allen Stufen vollständig aktiv."},
+    {"title":"Laie, Profi, Experte","text":"Die Stufe verändert nur Informationsdichte und Bedienelemente. Sicherheitsprüfungen, Datenintegrität und Recovery bleiben in allen Stufen vollständig aktiv."},
     {"title":"Fokusmodus","text":"Mit Arbeitsbereich maximierst du N. Escape oder Dashboard bringt die normale Ansicht zurück."},
     {"title":"Schnellspeicher","text":"Titel und Text eingeben und Enter drücken. Der Text wird mit Zeitstempel an die passende Datei im Projektordner angehängt; bestehende Inhalte werden nicht überschrieben."},
-    {"title":"Backups und Qualität","text":"Bei Änderungen am Hauptzweig werden zwei vorherige Versionen als Rückfallstände gehalten. Automatische Workflows prüfen Struktur, Manifest, Tests, Agentenregeln und Plan-Konformität."}
+    {"title":"Backups und Qualität","text":"Git hält zwei vorherige Hauptstände als Rückfallversionen. Zusätzlich hält der Datenkern zwei verifizierte SQLite-Sicherungen. Automatische Workflows prüfen Struktur, Manifest, Tests, Agentenregeln und Plan-Konformität."}
   ]
 }

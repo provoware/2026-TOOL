@@ -1,5 +1,42 @@
 # Changelog
 
+## 0.3.0 – 2026-09-12 – Jobmanager & reversibles Aktionsjournal
+### Datenkern / Migration
+- zentrale Projektdatenbank von Schema v1 auf v2 erweitert.
+- vor Migration einer bestehenden Datenbank wird weiterhin automatisch eine verifizierte SQLite-Sicherung erzeugt.
+- bestehende Todo-/Kalenderdaten bleiben erhalten; keine zweite Job-Datenbank und keine parallelen Statusdateien.
+
+### Persistenter Jobmanager
+- neues `app/job_manager.py` mit klarer Zustandsmaschine für `queued`, `running`, `paused`, `cancelling`, `cancelled`, `completed`, `failed` und `interrupted`.
+- Checkpoint/Resume mit Phase, Einheiten, Bytes, Resume-Cursor und Resume-Zähler.
+- zweistufige Pause und Abbruch für aktive Worker: Anforderung → Bestätigung am sicheren Checkpoint.
+- append-only `job_events` für nachvollziehbare Zustandsänderungen.
+- aktive Jobs werden bei Neuinitialisierung bzw. sauberem Programmende als `interrupted` konserviert statt still weiterzulaufen.
+
+### Watchdog / Recovery
+- automatischer Server-Watchdog prüft Heartbeats im Hintergrund.
+- stale `running`/`cancelling`-Jobs werden kontrolliert auf `interrupted` gesetzt.
+- keine automatische Fortsetzung nach Crash oder Heartbeatverlust; Resume bleibt explizit.
+
+### Reversibles Dateiaktionsjournal
+- neue persistente `file_actions` für `copy`, `move`, `rename`, `mkdir`.
+- Zustände `planned`, `applied`, `skipped`, `failed`, `undone`.
+- monotone Sequenz pro Job und Vorher-/Nachher-Metadaten als JSON.
+- Undo-Kandidaten nur bei `applied` + ausdrücklich `reversible=true`.
+- `skipped`/`failed` benötigen Klartextgrund.
+- Journalmethoden verändern in Iteration 3 bewusst keine Nutzdateien; endgültiges Löschen ist nicht unterstützt.
+
+### API / Sicherheit
+- lokale read-/control-Endpunkte für Jobs, Ereignisse, Aktionen und Undo-Kandidaten.
+- Worker-interne Bestätigungen bleiben Python-Servicefunktionen und werden nicht als allgemeine HTTP-Schreibendpunkte veröffentlicht.
+- localhost-only und bestehende stabile Fehlercodes bleiben erhalten.
+
+### Regression / Qualität
+- neuer Iterationsplan `docs/iterationen/ITERATION_03_PLAN.md` und verbindlicher Vertrag `docs/JOB_ACTION_CORE.md`.
+- neue Regression `tests/test_job_manager.py` für v1→v2-Migration, Bestandsschutz, Lifecycle, Pause/Resume, Abbruch, Checkpoint, Startup-Recovery, Watchdog, Journal, Undo und Rollback.
+- API-Regression um Job-/Journalvertrag erweitert.
+- Release-Gate besitzt eine eigene sichtbare Jobmanager-/Migration-/Resume-/Journal-Stufe.
+
 ## 0.2.3 – 2026-09-12 – Backup Reliability Hotfix
 ### Bestätigte Fehlerursache
 - v0.2.2 bestand Release- und Subagent-Gates; der separate Backupworkflow blieb rot.

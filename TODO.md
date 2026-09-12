@@ -16,30 +16,36 @@
 - [x] verifizierte Zwei-Slot-Snapshot-Backups statt historischer Ref-Rotation; zwei reale Rotationen erfolgreich nachgewiesen.
 
 ## 🟢 Iteration 3 – Jobmanager & reversibles Aktionsjournal v0.3.0
-1. [x] technischen R3-Plan vor Implementierung erstellt.
-2. [x] SQLite-Schema v1 → v2 sicher migriert; bestehende Todos bleiben erhalten und bestehende DB wird vorher verifiziert gesichert.
-3. [x] persistenten Jobmanager mit Zustandsmaschine und append-only Ereignissen implementiert.
-4. [x] Pause, Resume, Abbruch, Checkpoint und Heartbeat implementiert.
-5. [x] Neustart-Recovery und stale-Heartbeat-Watchdog implementiert.
-6. [x] transaktionales Datei-Aktionsjournal mit planned/applied/skipped/failed/undone implementiert.
-7. [x] Undo-Vertrag umgesetzt: nur angewendete, ausdrücklich reversible Aktionen sind Undo-Kandidaten.
-8. [x] lokale Job-/Journal-API ergänzt; Worker-Bestätigungen bleiben service-intern, keine externe Netzwerkfreigabe.
-9. [x] Migration-, Lifecycle-, Crash/Resume-, Watchdog-, Journal- und API-Regression bestanden; Gesamt-Discovery: 57 Tests grün.
-10. [x] Manifest, Changelog, Projektstatus, Architektur, Qualitätssicherung und Testübersicht synchronisiert.
-11. [x] finales PR Release-Gate mit 16 sichtbaren Stufen + alle sieben Subagent-Gates bestanden.
-12. [x] nach Squash-Merge `main` erneut vollständig geprüft: Release-Gate Run 42 grün, Subagent-Gates Run 40 alle sieben grün, Snapshot-Backup Run 15 grün; Manifest/Slots gegen die reale Haupt-Historie validiert.
+- [x] Jobmanager, Checkpoint/Resume, Watchdog, Aktionsjournal, Undo-Vertrag, 57 Tests, PR-/main-Gates und reale Snapshotrotation vollständig freigegeben.
 
-## 🔵 Nächste Ausbaustufe – Dateisortierung als nutzbarer Workflow
-1. [ ] Download-/Quellordner über grafischen Dialog wählen.
-2. [ ] vorhandene Dateitypen automatisch analysieren und verständlich gruppieren.
-3. [ ] Regeln per Auswahlfeldern/Buttons anbieten; keine Regelsyntax im Laienmodus nötig.
-4. [ ] Mehrfachtreffer und Konflikte vor Ausführung sichtbar machen und priorisieren.
-5. [ ] Vorschau/Trockenlauf mit Dateien, Anzahl und Datenvolumen.
-6. [ ] sicher kopieren/verschieben; kein stilles Überschreiben und kein endgültiges Löschen als Standard.
-7. [ ] verschwundene/veränderte Dateien toleriert überspringen und Grund anzeigen statt Gesamtlauf abzubrechen.
-8. [ ] globale Prozessanzeige mit bearbeitet/gesamt, Dateien/s, Volumen/s, OK/Hinweis/Fehler/übersprungen.
-9. [ ] Abschlusskarte mit Ergebnis, übersprungenen Punkten, Gründen, Undo und nächstem Schritt.
-10. [ ] vollständige Regression einschließlich Crash/Resume, Konflikten und paralleler Dateiveränderung.
+## 🔵 Iteration 4 – Read-only Sortier-Analyse & Vorschau v0.4.0
+1. [x] verbindlichen R3-Plan vor Implementierung angelegt.
+2. [x] Scanner-/Regel-Engine als getrennten read-only Service angelegt.
+3. [x] persistente, zeilenweise Scan-Ergebnisse in derselben Projekt-SQLite vorgesehen; erstmalige Feature-Schemaanlage wird vorher verifiziert gesichert.
+4. [x] Quellwurzel-Symlinks blockiert; Symlink-Inhalte werden niemals verfolgt.
+5. [x] rekursiv standardmäßig aus; versteckte/System-/Cache-Inhalte standardmäßig aus.
+6. [x] deterministische Kategorien Bilder/Video/Audio/Dokumente/Archive/Text-Code/Sonstige implementiert.
+7. [x] Regelpriorität, Mehrfachtreffer und Konfliktvertrag implementiert; Wortregel kann Dateitypregel überstimmen.
+8. [x] tolerantes Verhalten für verschwundene/unlesbare Einträge mit Klartextgrund implementiert.
+9. [x] Paging und Scan-Zusammenfassung im Service vorbereitet.
+10. [x] Scanner ausdrücklich als R3 klassifiziert und Agent-Gate-Regression ergänzt.
+11. [x] erste Scanner-Regressionen für Backup/Schema, Nicht-Rekursion, Symlinks, Skip-Gründe, Kategorien, Priorität, Konflikte, Paging und Nicht-Veränderung angelegt.
+12. [ ] Scanner-/Regeltests im echten GitHub-Gate vollständig grün verifizieren und Fehler ursachenbasiert beheben.
+13. [ ] localhost-only API für Ordnerauswahl, Scanstart, Summary und paginierte Vorschau anbinden.
+14. [ ] Dateien-Modul im Hauptarbeitsbereich als laienverständlichen Assistenten anbinden.
+15. [ ] globale Prozessanzeige mit Scanstatus/Dateien/Volumen/übersprungen verbinden.
+16. [ ] Manifest, Changelog, Projektstatus, Architektur, Hilfe und Testübersicht vollständig synchronisieren.
+17. [ ] vollständiges finales PR Release-Gate + sieben Subagent-Gates bestehen.
+18. [ ] nach Merge dieselben Gates auf `main` und reale Snapshotrotation prüfen.
+
+## Danach – sicherer Datei-Executor
+1. [ ] Zielordner und Konfliktstrategie ausschließlich nach erfolgreicher Vorschau freigeben.
+2. [ ] copy/move mit Vorvalidierung, Nachvalidierung und Aktionsjournal implementieren.
+3. [ ] kein stilles Überschreiben und kein endgültiges Löschen als Standard.
+4. [ ] parallel veränderte/verschwundene Dateien toleriert überspringen statt Gesamtlauf abzubrechen.
+5. [ ] Undo ausschließlich aus nachvalidiertem `applied`-Journalzustand.
+6. [ ] Abschlusskarte mit bearbeitet/übersprungen/Fehler/Volumen/Undo/nächster Schritt.
+7. [ ] vollständige Crash-/Resume-/Konflikt-/Undo-Regression vor Freigabe.
 
 ## Qualitätsregel
 Nutzer ist Anwender, nicht reguläre Testinstanz. Jede Verhaltensänderung braucht Plan, Vor-/Nachvalidierung und passende Regression; rote Release-/Backup-Gates werden ursachenbasiert behoben statt ignoriert.

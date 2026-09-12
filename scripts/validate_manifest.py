@@ -12,8 +12,8 @@ if app.get("version") != "0.4.0" or app.get("status") != "iteration-4-sorter-pre
 development = m.get("development", {})
 if development.get("active_iteration") != 4 or development.get("current_version") != "0.4.0":
     errors.append("Aktiver Releasevertrag muss Iteration 4 / v0.4.0 sein")
-if development.get("stage") != "sorter-preview" or development.get("risk") != "R3" or development.get("release_status") != "release-candidate":
-    errors.append("Iteration 4 muss als R3 sorter-preview release-candidate geführt werden")
+if development.get("stage") != "sorter-preview" or development.get("risk") != "R3" or development.get("release_status") != "released":
+    errors.append("Iteration 4 muss als R3 sorter-preview released geführt werden")
 iteration = m.get("iteration", {})
 if iteration.get("number") != 4 or iteration.get("stage") != "4.0" or iteration.get("release") != "0.4.0":
     errors.append("Iterations-/Releasevertrag muss 4 / 4.0 / 0.4.0 sein")
@@ -131,4 +131,4 @@ if errors:
     for error in errors:
         print("FEHLER:", error)
     raise SystemExit(1)
-print("OK   Manifest konsistent – Iteration 4 / Read-only Sortier-Analyse & Vorschau v0.4.0 RC")
+print("OK   Manifest konsistent – Iteration 4 / Read-only Sortier-Analyse & Vorschau v0.4.0 RELEASED")

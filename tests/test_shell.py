@@ -19,6 +19,10 @@ class ShellTests(unittest.TestCase):
         self.assertEqual(manifest["iteration"]["stage"], "3.0")
         self.assertEqual(manifest["iteration"]["scope"], "job-action-core")
         self.assertEqual(manifest["iteration"]["risk"], "R3")
+        self.assertEqual(manifest["development"]["active_iteration"], 4)
+        self.assertEqual(manifest["development"]["next_version"], "0.4.0")
+        self.assertEqual(manifest["development"]["stage"], "sorter-preview")
+        self.assertEqual(manifest["development"]["risk"], "R3")
         self.assertEqual(manifest["ui"]["areas"], list("ABCDEFGHIJKLMN"))
         self.assertEqual(len(manifest["ui"]["themes"]), 5)
         self.assertFalse(manifest["quality"]["manual_user_acceptance_required"])
@@ -31,6 +35,13 @@ class ShellTests(unittest.TestCase):
         self.assertTrue(manifest["jobs"]["checkpoint_resume"])
         self.assertTrue(manifest["jobs"]["automatic_watchdog"])
         self.assertFalse(manifest["file_actions"]["destructive_delete_supported"])
+        sorter = manifest["sorter_preview"]
+        self.assertTrue(sorter["source_read_only"])
+        self.assertFalse(sorter["recursive_default"])
+        self.assertFalse(sorter["include_hidden_default"])
+        self.assertFalse(sorter["follow_symlinks"])
+        self.assertEqual(sorter["mutating_operations"], [])
+        self.assertEqual(sorter["test"], "tests/test_sorter_preview.py")
 
     def test_html_contains_every_area_and_data_ui(self):
         html = (ROOT / "app/static/index.html").read_text(encoding="utf-8")

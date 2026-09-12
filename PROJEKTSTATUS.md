@@ -4,18 +4,20 @@
 **v0.3.0 – Jobmanager & reversibles Aktionsjournal**
 
 ## Status
-🟢 **PR-freigabefähige Implementierung** – der fachliche Implementierungshead `eb7881d7…` bestand das vollständige Release-Gate und alle sieben Subagent-Gates. Nachfolgende reine Evidenz-/Dokumentationscommits müssen vor Merge dieselben Gates erneut bestehen. `main`-Nachvalidierung und reale Snapshotrotation bleiben nach dem Merge zwingend.
+🟢 **Freigegeben** – Iteration 3 ist technisch auf `main` vollständig nachvalidiert. Der veröffentlichte Laufzeitstand ist Commit `1b889c2a12b6a640bb6015d72bb3a4c4054cfe9f`.
 
-## Freigegebene Basis aus v0.2.x
+## Freigegebene Basis
 - Expert Shell A–N,
 - SQLite-WAL-Datenkern, Todo, Kalender und reversibles Archiv,
 - Crash-/Recovery-Schutz,
 - Reliability & Self-Repair,
 - globale UX-/Prozessanzeige, Warn-/Fehlerzähler, Zoom 100–200 %, Fokus/ARIA,
 - sieben read-only Prüfrollen mit R0–R4,
-- verifizierte Zwei-Slot-Release-Snapshots auf `backup/snapshots`.
+- verifizierte Zwei-Slot-Release-Snapshots auf `backup/snapshots`,
+- persistenter Jobmanager mit Checkpoint/Resume und Watchdog,
+- reversibles Dateiaktionsjournal als Sicherheitsvertrag für kommende Datei-Workflows.
 
-## Iteration 3 – neuer Jobkern
+## Iteration 3 – Jobkern
 - SQLite-Schema v2 in derselben Projektdatenbank,
 - verifizierte Sicherung vor bestehender Schema-Migration,
 - persistente Job-Zustandsmaschine,
@@ -29,13 +31,13 @@
 - kein endgültiges Löschen und noch keine reale Dateioperation in diesem Iterationsschritt.
 
 ## Sicherheitsentscheidung
-Das Aktionsjournal ist bewusst **kein Datei-Executor**. Es darf keine Dateiänderung vortäuschen. Ein späterer Executor muss Quelle/Ziel vor und nach jeder realen Aktion validieren und darf erst danach `applied` setzen. Für Undo gilt dasselbe: erst reale inverse Operation + Nachvalidierung, dann `undone`.
+Das Aktionsjournal ist bewusst **kein Datei-Executor**. Es darf keine Dateiänderung vortäuschen. Ein späterer Executor muss Quelle und Ziel unmittelbar vor und nach jeder realen Aktion validieren und darf erst danach `applied` setzen. Für Undo gilt dasselbe: erst reale inverse Operation plus Nachvalidierung, dann `undone`.
 
 ## Server / Watchdog
-`AppContext` verwendet ein gemeinsames Service-Lock für Datenkern und Jobmanager, damit kein Lock-Reihenfolge-Deadlock entsteht. Der Watchdog läuft als Daemon, prüft Heartbeats regelmäßig und setzt veraltete aktive Jobs auf `interrupted`; automatische Fortsetzung erfolgt nicht.
+`AppContext` verwendet ein gemeinsames Service-Lock für Datenkern und Jobmanager. Der Watchdog läuft als Daemon, prüft Heartbeats regelmäßig und setzt veraltete aktive Jobs auf `interrupted`; automatische Fortsetzung erfolgt nicht.
 
 ## API
-Neu vorhanden:
+Freigegeben sind:
 - `GET /api/jobs`
 - `GET /api/jobs/summary`
 - `GET /api/jobs/<id>`
@@ -49,28 +51,39 @@ Neu vorhanden:
 
 Worker-interne Start-, Checkpoint-/Heartbeat-, Bestätigungs-, Abschluss- und Fehlerfunktionen bleiben Python-intern. Der Server bleibt localhost-only.
 
-## Automatische PR-Evidenz
-Auf Implementierungshead `eb7881d7d0cf15d5b8f1f6e4ff86fd543a68d74d`:
-- Release-Gate Run 39: 🟢 alle 16 sichtbaren Stufen erfolgreich.
-- Subagent-Gates Run 37: 🟢 Analyse, Risiko, Fehlerursache, Plan, Regression, Plan-Prüfung und Release-Prüfung erfolgreich.
+## Automatische Release-Evidenz
+### Pull Request
+- finaler PR-Head `16e4461f004af989484e75606e0e2933fa644630`,
+- finales PR Release-Gate: 🟢 alle 16 sichtbaren Stufen erfolgreich,
+- finale PR Subagent-Gates: 🟢 alle sieben Rollen erfolgreich,
 - automatische Gesamt-Discovery: **57 Tests grün**.
-- eigener Jobmanager-Gate: 🟢 10 Migration-/Lifecycle-/Resume-/Watchdog-/Journaltests erfolgreich.
-- HTTP-API-Vertrag: 🟢 einschließlich Job-/Journal-Endpunkte.
-- vorheriger Run 38 fand ausschließlich einen Markdown-Whitespacefehler; alle Fachtests waren bereits grün. Der Whitespacefehler wurde korrigiert und der komplette Gate-Satz anschließend erfolgreich wiederholt.
 
-## Noch offen vor endgültiger Freigabe
-1. reine Evidenz-/Dokumentationscommits erneut vollständig über PR-Gates prüfen,
-2. Squash-Merge nur auf unverändertem geprüftem Head,
-3. Release- und sieben Subagent-Gates erneut auf dem gemergten `main`,
-4. reale Snapshot-Backuprotation nach Merge,
-5. `backup/snapshots/version-backups/manifest.json` und beide erzeugten Slots gegen die tatsächliche `main`-Historie prüfen.
+### Nach Squash-Merge auf `main`
+- veröffentlichter Stand: `1b889c2a12b6a640bb6015d72bb3a4c4054cfe9f`,
+- Release-Gate Run 42 (`34701526931`): 🟢 alle 16 Stufen erfolgreich,
+- Subagent-Gates Run 40 (`34701526950`): 🟢 Analyse, Risiko, Fehlerursache, Plan, Regression, Plan-Prüfung und Release-Prüfung erfolgreich,
+- Snapshot-Backup Run 15 (`34701526895`): 🟢 Erzeugung, Veröffentlichung und Nachvalidierung erfolgreich.
+
+## Tatsächliche Rückfallstände nach v0.3.0
+`backup/snapshots/version-backups/manifest.json` wurde nach dem Merge real geprüft:
+
+- `previous-1.zip` → Commit `5a075481f683cba3d411098cc3d21382283ae719`
+  - SHA-256: `744296cb41ab5f190c1d20fc7fe264ab2ecca12f3c0364ba77de211352d7a02f`
+- `previous-2.zip` → Commit `597f2337bba4eb961b61a4455db4b00824716b69`
+  - SHA-256: `5dbb42abad0bb955302387d9d68ee0b00ebbd0eb644d929cd407545f4b49c9c2`
+
+Beide ZIPs wurden vom Backupworkflow auf Integrität geprüft. Ihre Commit-Zuordnung entspricht der tatsächlichen ersten Elternhistorie von `main` unmittelbar vor v0.3.0.
 
 ## Bekannte externe Schutzlücke
-`main` ist repositoryseitig weiterhin nicht durch Branch-Protection/Ruleset geschützt. Automatische Gates sind aktiv, können einen ausreichend berechtigten direkten Push aber nicht technisch verhindern. Dieser Punkt bleibt in `docs/OFFENE_RISIKEN.md` dokumentiert.
+`main` ist repositoryseitig weiterhin **nicht** durch Branch-Protection/Ruleset geschützt. Automatische Gates sind aktiv, können einen ausreichend berechtigten direkten Push aber nicht technisch verhindern. Dieser Punkt bleibt in `docs/OFFENE_RISIKEN.md` dokumentiert.
 
-## Nächster Produktivschritt nach Freigabe
-Auf diesem Job-/Journalfundament kann anschließend der echte Dateisortier-Workflow entstehen:
-**Ordner wählen → analysieren → Regeln → Konflikte → Vorschau/Trockenlauf → sichere copy/move-Ausführung → Ergebnis/Übersprungen/Undo.**
+## Nächster Produktivschritt
+Als nächste Ausbaustufe folgt der Dateisortier-Workflow. Aus Sicherheitsgründen wird er in zwei Stufen aufgebaut:
+
+1. **read-only Analyse + Regeln + Konflikterkennung + Vorschau/Trockenlauf**, ohne Nutzdateien zu verändern,
+2. erst danach **sicherer Executor für Kopieren/Verschieben + Undo**, auf Basis des jetzt freigegebenen Job-/Journalfundaments.
+
+Damit wird reale Dateiänderung erst eingeführt, wenn die Vorschau- und Konfliktlogik automatisch belastbar geprüft ist.
 
 ## Nutzer-Abnahme
-Nicht erforderlich. Automatische Evidenz ersetzt keine Nutzermeinung, aber der Nutzer wird nicht als reguläre Testinstanz eingesetzt.
+Nicht erforderlich. Der Nutzer ist Anwender und keine reguläre Testinstanz; technische Freigabe basiert auf automatischer Evidenz.

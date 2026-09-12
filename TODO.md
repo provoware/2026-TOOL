@@ -15,7 +15,7 @@
 ## 🟢 Iteration 2.3 – Backup Reliability Hotfix v0.2.3
 - [x] verifizierte Zwei-Slot-Snapshot-Backups statt historischer Ref-Rotation; zwei reale Rotationen erfolgreich nachgewiesen.
 
-## 🔵 Iteration 3 – Jobmanager & reversibles Aktionsjournal v0.3.0
+## 🟢 Iteration 3 – Jobmanager & reversibles Aktionsjournal v0.3.0
 1. [x] technischen R3-Plan vor Implementierung erstellt.
 2. [x] SQLite-Schema v1 → v2 sicher migriert; bestehende Todos bleiben erhalten und bestehende DB wird vorher verifiziert gesichert.
 3. [x] persistenten Jobmanager mit Zustandsmaschine und append-only Ereignissen implementiert.
@@ -26,10 +26,10 @@
 8. [x] lokale Job-/Journal-API ergänzt; Worker-Bestätigungen bleiben service-intern, keine externe Netzwerkfreigabe.
 9. [x] Migration-, Lifecycle-, Crash/Resume-, Watchdog-, Journal- und API-Regression bestanden; Gesamt-Discovery: 57 Tests grün.
 10. [x] Manifest, Changelog, Projektstatus, Architektur, Qualitätssicherung und Testübersicht synchronisiert.
-11. [x] Release-Gate mit 16 sichtbaren Stufen + alle sieben Subagent-Gates auf Implementierungshead `eb7881d7…` bestanden; jeder nachfolgende Doku-Head muss vor Merge dieselben Gates erneut bestehen.
-12. [ ] nach Merge dieselben Gates auf `main` sowie reale Snapshot-Backuprotation prüfen.
+11. [x] finales PR Release-Gate mit 16 sichtbaren Stufen + alle sieben Subagent-Gates bestanden.
+12. [x] nach Squash-Merge `main` erneut vollständig geprüft: Release-Gate Run 42 grün, Subagent-Gates Run 40 alle sieben grün, Snapshot-Backup Run 15 grün; Manifest/Slots gegen die reale Haupt-Historie validiert.
 
-## Danach – Dateisortierung als nutzbarer Workflow
+## 🔵 Nächste Ausbaustufe – Dateisortierung als nutzbarer Workflow
 1. [ ] Download-/Quellordner über grafischen Dialog wählen.
 2. [ ] vorhandene Dateitypen automatisch analysieren und verständlich gruppieren.
 3. [ ] Regeln per Auswahlfeldern/Buttons anbieten; keine Regelsyntax im Laienmodus nötig.

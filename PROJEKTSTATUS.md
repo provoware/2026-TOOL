@@ -4,7 +4,15 @@
 0.1.0 – Iteration 1 „Expert Shell“
 
 ## Status
-🟢 Implementiert, automatische Validierung vorgesehen.
+🟢 Freigegeben – lokale Vorvalidierung und unabhängige GitHub-Nachvalidierung bestanden.
+
+## Validierung
+- lokales Release-Gate: bestanden
+- 7 automatische Shell-/Persistenztests: bestanden
+- GitHub Release-Gate: bestanden
+- Subagent-Gates Analyse → Plan → Plan-Prüfung: bestanden
+- automatische Backuprotation: bestanden
+- Nutzer-Abnahme: nicht erforderlich
 
 ## Enthalten
 - lokale localhost-Shell ohne externe Runtime-Pakete
@@ -22,4 +30,4 @@
 - automatisches Release-Gate
 
 ## Noch bewusst nicht Fachfunktion
-Todo, Datenbank, globale Suche und weitere Module sind in Iteration 1 als stabile Shell-Grenzen vorhanden; ihre vollständige Fachlogik folgt getrennt.
+Todo, Datenbank, globale Suche und weitere Module sind in Iteration 1 als stabile Shell-Grenzen vorhanden; ihre vollständige Fachlogik folgt getrennt in der nächsten geplanten Iteration.

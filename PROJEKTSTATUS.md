@@ -4,78 +4,60 @@
 **v0.4.0 – Read-only Sortier-Analyse & Vorschau**
 
 ## Status
-🟡 **Release Candidate – Funktionsumfang und Versionspromotion vollständig; finale PR-/main-Gates stehen noch aus.**
+🟢 **Release-Stand – Funktion, Paketierung und vollständiger PR-Prüfpfad sind nachgewiesen.**
 
-Manifest, Serverkennung, HTTP-Header und Versionsregressionen sind auf v0.4.0 synchronisiert. Dieser Stand wird erst nach einem vollständig grünen unveränderten PR-Head, Squash-Merge und erneuter Nachvalidierung auf `main` endgültig freigegeben.
+Manifest, Serverkennung, HTTP-Header und Versionsregressionen sind auf v0.4.0 synchronisiert. Der Release-Status ist `released`. Vor dem Squash-Merge wird der unveränderte letzte Metadaten-Head nochmals vollständig geprüft; nach dem Merge folgen dieselben Gates auf `main`, Snapshotrotation und Downloadprüfung des dort erzeugten ZIPs.
 
 ## Funktionsumfang v0.4.0
 - verbindlicher R3-Plan vor Implementierung,
 - `app/sorter_preview.py` als getrennte read-only Scanner-/Regelgrenze,
 - persistente zeilenweise Scan-Ergebnisse in derselben Projekt-SQLite,
 - Feature-Schema v1 mit verifizierter DB-Sicherung vor erstmaliger Tabellenanlage,
-- Quellwurzel-Symlink-Schutz,
-- keine Symlink-Verfolgung innerhalb des Scans,
-- nicht-rekursiver Standard,
-- versteckte/System-/Cache-Inhalte standardmäßig ausgeschlossen,
+- Quellwurzel-Symlink-Schutz und keine Symlink-Traversierung,
+- nicht-rekursiver Standard; versteckte/System-/Cache-Inhalte standardmäßig ausgeschlossen,
 - deterministische Kategorien Bilder/Video/Audio/Dokumente/Archive/Text-Code/Sonstige,
 - Regelpriorität, Mehrfachtreffer und echte Konflikterkennung,
 - tolerantes Überspringen verschwundener/unlesbarer Einträge,
 - paginierte Vorschau und Scan-Zusammenfassung,
-- Scanner ausdrücklich als R3 klassifiziert,
-- asynchroner localhost-only Scanstart statt blockierender HTTP-Anfrage,
-- dedizierter Scan-Worker mit sauberem Lifecycle,
+- asynchroner localhost-only Scanstart mit eigenem Worker,
 - Resume startet tatsächlich wieder einen Worker und nicht nur einen Datenbankstatus,
 - grafische Ordnerwahl über KDialog mit verständlichem Fallback,
-- lazy-loaded Dateien-Assistent im Hauptarbeitsbereich,
-- Standardgruppen per Auswahlfeld statt Regelsyntax,
-- optionale Wortregeln mit Zielgruppe und verständlicher Vorrangstufe,
+- lazy-loaded Dateien-Assistent ohne Regelsyntax-Zwang,
+- Standardgruppen sowie optionale Wortregeln mit verständlicher Vorrangstufe,
 - Pause, Weiter und Abbruch,
-- Summary-Karten für Dateien, Volumen, zugeordnet, Konflikte, nicht zugeordnet und übersprungen,
-- Filter und Paging für große Ergebnislisten,
-- globale Prozessanzeige während des Scans,
+- Summary-Karten, Filter, Paging und globale Prozessanzeige,
 - bewusst kein Ausführen-Button für Dateiänderungen.
 
 ## Sicherheitsentscheidung
-Der Scanner darf Nutzdateien ausschließlich über Dateisystem-Metadaten betrachten. Er enthält keine Funktion zum Kopieren, Verschieben, Umbenennen oder Löschen. Schreibzugriffe erfolgen nur auf PROVOWARE-eigene Projektzustände wie SQLite-Scanindex, Jobstatus und Logs.
+Der Scanner betrachtet Nutzdateien ausschließlich über Dateisystem-Metadaten. Er enthält keine Funktion zum Kopieren, Verschieben, Umbenennen oder Löschen. Schreibzugriffe erfolgen nur auf PROVOWARE-eigene Projektzustände wie SQLite-Scanindex, Jobstatus und Logs. Die spätere Datei-Ausführung bleibt eine getrennte R3-Ausbaustufe.
 
-Die spätere Datei-Ausführung bleibt eine getrennte R3-Ausbaustufe und darf erst nach erfolgreicher Vorschau-/Konfliktfreigabe entstehen.
+## Paketierung
+- `scripts/build_release_package.py` erzeugt das Nutzer-ZIP direkt aus einem Git-Commit über `git archive`.
+- eindeutiger Wurzelordner `PROVOWARE-HEADQUARTER-v0.4.0/`.
+- ZIP-Integrität, Pflichtdateien, Dateianzahl und das Fehlen von `.git` werden geprüft.
+- SHA-256 und `release-package.json` werden erzeugt.
+- das Release-Gate lädt ZIP, Prüfsumme und Metadaten als Actions-Artefakt hoch.
+- `tests/test_release_package.py` schützt diesen Vertrag dauerhaft.
 
-## Regelvertrag
-Eine aktive Regel kann Dateiendungen, Suchwörter und/oder Kategorie kombinieren. Innerhalb einer Liste gilt ODER, zwischen gesetzten Bedingungsarten UND. Höhere Prioritätszahl gewinnt. Haben die stärksten Treffer dieselbe Priorität, aber unterschiedliche Zielgruppen, wird die Datei als `conflict` markiert. Es wird keine Zielgruppe geraten.
+## Automatische Evidenz vor letzter Metadatenpromotion
+Paket-/RC-Head `3bbc32baf78f8363b63315957d6b4303ee20ec80`:
+- Release-Gate Run 80 (`34707482618`): 🟢 alle 17 Qualitätsstufen erfolgreich,
+- zusätzliche Paketstufe: 🟢 ZIP erzeugt, verifiziert und als Artefakt veröffentlicht,
+- Gesamt-Discovery: **77 Tests grün**,
+- Subagent-Gates Run 78 (`34707482625`): 🟢 Analyse, Risiko, Fehlerursache, Plan, Regression, Plan-Prüfung und Release-Prüfung erfolgreich,
+- heruntergeladenes Actions-Artefakt zusätzlich lokal geprüft: äußeres und inneres ZIP fehlerfrei, SHA-256 stimmig, einheitlicher v0.4.0-Wurzelordner, keine `.git`-Daten.
 
-## Robustheitsvertrag
-- Einzelne `OSError`-/Permission-/Verschwunden-Fälle brechen den Gesamtscan nicht ab.
-- Symlinks werden sichtbar als übersprungen protokolliert und niemals traversiert.
-- Scanresultate werden in Batches gespeichert.
-- vorhandener Jobmanager bleibt alleiniger Eigentümer von Pause/Resume/Abbruch/Heartbeat/Checkpoint.
-- Crash-/Restart-Zustände bleiben über `interrupted` sichtbar; keine stille automatische Fortsetzung.
-- Resume eines Sortierjobs startet zusätzlich einen echten Scanner-Worker.
-- der HTTP-Server bleibt während eines Scans ansprechbar.
+Der erste Scanner-Zwischenlauf fand einen Fehler ausschließlich im Test-Doppelgänger für `os.scandir()`. Die Produktlogik wurde nicht geändert; der Test wurde an den echten Iteratorvertrag angepasst und der vollständige Prüfpfad danach erfolgreich wiederholt.
 
-## Bisherige automatische Evidenz
-Auf dem vollständig integrierten Implementierungshead `693ebbbf0124bb94db20a995877f06fa95f796f2` vor der Versionspromotion:
-- Release-Gate Run 56: 🟢 alle 17 sichtbaren Stufen erfolgreich,
-- Gesamt-Discovery: **76 Tests grün**,
-- Scanner-Regressionsgruppe: **12 Tests grün**,
-- HTTP-API-Vertrag: **11 Tests grün**,
-- UX-Vertrag: **9 Tests grün**.
+## Letzte Freigabeschritte
+1. exakt den letzten `released`-PR-Head erneut über alle 17 Release-Stufen, Paketbau und sieben Subagent-Gates prüfen,
+2. Draft-Status entfernen,
+3. Squash-Merge nur mit exakt diesem geprüften Head,
+4. Release-Gate, Subagent-Gates und Snapshot-Backup auf dem neuen `main` prüfen,
+5. finales Nutzer-ZIP aus dem `main`-Workflow herunterladen und erneut auf ZIP-Integrität, Commit und SHA-256 prüfen.
 
-Der erste Scanner-Zwischenlauf fand einen Fehler ausschließlich im Test-Doppelgänger für `os.scandir()`: Der Fake-Iterator war nicht iterierbar. Die Produktlogik wurde nicht geändert; der Test wurde an den echten Iteratorvertrag angepasst und der vollständige Prüfpfad danach erfolgreich wiederholt.
-
-## Releasebedingung für diesen Stand
-1. exakt den finalen v0.4.0-PR-Head über alle 17 Release-Stufen und sieben Subagent-Gates prüfen,
-2. Draft-PR erst danach freigabefähig markieren,
-3. Squash-Merge nur auf unverändertem geprüftem Head,
-4. dieselben Gates erneut auf `main`,
-5. Snapshotrotation nach Merge prüfen,
-6. finales Nutzer-ZIP aus genau dem nachvalidierten Hauptstand erzeugen und ZIP-Integrität + SHA-256 prüfen.
-
-## Letzter vorheriger Hauptstand
+## Vorheriger Hauptstand
 Der `main`-Stand vor v0.4.0 ist Commit `76c7d0a28d7a93391de860fc16ced706223dfbd8`.
-
-Die vorherige reale Snapshotrotation enthält:
-- `previous-1.zip` → `1b889c2a12b6a640bb6015d72bb3a4c4054cfe9f`,
-- `previous-2.zip` → `5a075481f683cba3d411098cc3d21382283ae719`.
 
 ## Bekannte externe Schutzlücke
 `main` ist repositoryseitig weiterhin **nicht** durch Branch-Protection/Ruleset geschützt. Automatische Gates sind aktiv, können einen ausreichend berechtigten direkten Push aber nicht technisch verhindern. Dieser Punkt bleibt in `docs/OFFENE_RISIKEN.md` dokumentiert.

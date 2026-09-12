@@ -1,31 +1,158 @@
 #!/usr/bin/env python3
-"""Deterministische CI-Gates passend zu den drei Subagentenrollen."""
+"""Deterministische, risikobasierte Gates für die PROVOWARE-Subagenten."""
 from __future__ import annotations
-import argparse, subprocess
 
-def changed(base: str|None, head: str) -> list[str]:
-    if not base or set(base)=={"0"}: cmd=["git","show","--pretty=","--name-only",head]
-    else: cmd=["git","diff","--name-only",base,head]
-    p=subprocess.run(cmd,text=True,capture_output=True,check=False)
-    if p.returncode:
-        p=subprocess.run(["git","show","--pretty=","--name-only",head],text=True,capture_output=True,check=True)
-    return sorted({x.strip() for x in p.stdout.splitlines() if x.strip()})
+import argparse
+import subprocess
 
-def main():
-    ap=argparse.ArgumentParser();ap.add_argument("--mode",choices=["analyse","plan","compliance"],required=True);ap.add_argument("--base");ap.add_argument("--head",default="HEAD");a=ap.parse_args()
-    files=changed(a.base,a.head);code=[f for f in files if f.startswith(("app/","scripts/")) or f.startswith(".github/workflows/")];tests=[f for f in files if f.startswith("tests/")];risks=[]
-    if any(f.startswith("app/server.py") for f in files): risks.append("Persistenz/API/Startdienst")
-    if any(f.startswith(".github/workflows/") for f in files): risks.append("CI/Backup/Release")
-    if any(f.startswith("app/static/") for f in files): risks.append("UI/Barrierefreiheit/Layout")
-    print(f"# {a.mode.capitalize()}-Gate\n");print(f"Geänderte Dateien: {len(files)}");print("Risiken: "+(", ".join(risks) if risks else "niedrig/keine Kernkomponente erkannt"))
-    if a.mode=="analyse": print("Ergebnis: Analyse abgeschlossen; keine Dateien wurden durch dieses Gate verändert.");return
-    if a.mode=="plan":
-        if code and "TODO.md" not in files: print("BLOCKIERT: Code/Workflow geändert, aber TODO.md nicht mitgeführt.");raise SystemExit(1)
-        print("Ergebnis: Planbezug vorhanden.");return
-    missing=[]
-    if code and not tests: missing.append("Tests")
-    if code and "CHANGELOG.md" not in files: missing.append("CHANGELOG.md")
-    if code and "PROJEKTSTATUS.md" not in files: missing.append("PROJEKTSTATUS.md")
-    if missing: print("BLOCKIERT: Umsetzung ohne "+", ".join(missing));raise SystemExit(1)
-    print("Ergebnis: Plan-Konformität der harten Regeln bestanden.")
-if __name__=="__main__": main()
+MODES = ("analyse", "risk", "rootcause", "plan", "regression", "compliance", "release")
+RISK_ORDER = {"R0": 0, "R1": 1, "R2": 2, "R3": 3, "R4": 4}
+
+R3_PATHS = (
+    "app/data_core.py",
+    "app/project_store.py",
+    "app/self_repair.py",
+    "app/server.py",
+    ".github/workflows/",
+    "scripts/agent_gate.py",
+    "scripts/validate_",
+    "AGENTS.md",
+    ".agents/",
+)
+R2_PREFIXES = ("app/", "scripts/")
+R1_PREFIXES = ("app/static/",)
+AGENT_PATHS = ("AGENTS.md", ".agents/", ".github/workflows/agents.yml", "scripts/agent_gate.py", "scripts/validate_agents.py")
+
+
+def _run(cmd: list[str]) -> subprocess.CompletedProcess[str]:
+    return subprocess.run(cmd, text=True, capture_output=True, check=False)
+
+
+def changed(base: str | None, head: str) -> list[str]:
+    if not base or set(base) == {"0"}:
+        cmd = ["git", "show", "--pretty=", "--name-only", head]
+    else:
+        cmd = ["git", "diff", "--name-only", base, head]
+    result = _run(cmd)
+    if result.returncode:
+        result = subprocess.run(["git", "show", "--pretty=", "--name-only", head], text=True, capture_output=True, check=True)
+    return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()})
+
+
+def deleted(base: str | None, head: str) -> list[str]:
+    if not base or set(base) == {"0"}:
+        return []
+    result = _run(["git", "diff", "--diff-filter=D", "--name-only", base, head])
+    return sorted({line.strip() for line in result.stdout.splitlines() if line.strip()}) if result.returncode == 0 else []
+
+
+def _matches(path: str, patterns: tuple[str, ...]) -> bool:
+    return any(path == item or path.startswith(item) for item in patterns)
+
+
+def risk_level(files: list[str], removed: list[str]) -> tuple[str, list[str]]:
+    reasons: list[str] = []
+    level = "R0"
+    for path in files:
+        if _matches(path, R1_PREFIXES) and RISK_ORDER[level] < 1:
+            level = "R1"
+            reasons.append("Darstellung/UI")
+        if _matches(path, R2_PREFIXES) and RISK_ORDER[level] < 2:
+            level = "R2"
+            reasons.append("Fachlogik/API")
+        if _matches(path, R3_PATHS):
+            level = "R3"
+            reasons.append(f"Kern-/Qualitätsgrenze: {path}")
+    if any(path.startswith(("app/", "scripts/", ".github/")) for path in removed):
+        level = "R4"
+        reasons.append("Produktiv-/Qualitätsdatei gelöscht")
+    return level, reasons
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=MODES, required=True)
+    parser.add_argument("--base")
+    parser.add_argument("--head", default="HEAD")
+    args = parser.parse_args()
+
+    files = changed(args.base, args.head)
+    removed = deleted(args.base, args.head)
+    risk, reasons = risk_level(files, removed)
+    code = [f for f in files if f.startswith(("app/", "scripts/", ".github/workflows/"))]
+    tests = [f for f in files if f.startswith("tests/")]
+    plan_docs = [f for f in files if f == "TODO.md" or f.startswith("docs/iterationen/")]
+    agent_changes = [f for f in files if _matches(f, AGENT_PATHS)]
+
+    print(f"# {args.mode} Gate")
+    print(f"Geänderte Dateien: {len(files)}")
+    print(f"Risikoklasse: {risk}")
+    print("Risikogründe: " + (", ".join(dict.fromkeys(reasons)) if reasons else "keine Laufzeitänderung erkannt"))
+    if removed:
+        print("Gelöscht: " + ", ".join(removed))
+
+    if args.mode == "analyse":
+        print("Trigger: aktiv" if files else "Trigger: keine Änderung")
+        print("Ergebnis: Analyse abgeschlossen; dieses Gate verändert keine Dateien.")
+        return
+
+    if args.mode == "risk":
+        if risk == "R4":
+            print("BLOCKIERT: R4 ist standardmäßig nicht automatisch freigabefähig.")
+            raise SystemExit(1)
+        print(f"Ergebnis: {risk} erkannt; erforderliche Prüfintensität festgelegt.")
+        return
+
+    if args.mode == "rootcause":
+        relevant = risk in {"R3", "R4"} or any("test" in f.lower() for f in files)
+        print("Trigger: aktiv – Root-Cause-Prüfung erforderlich." if relevant else "Trigger: nicht erforderlich für diesen Diff.")
+        return
+
+    if args.mode == "plan":
+        if code and not plan_docs:
+            print("BLOCKIERT: Laufzeit-/Workflowänderung ohne aktualisierten Plan/TODO.")
+            raise SystemExit(1)
+        print("Ergebnis: Planbezug vorhanden oder keine Verhaltensänderung.")
+        return
+
+    if args.mode == "regression":
+        if risk in {"R2", "R3"} and code and not tests:
+            print("BLOCKIERT: R2/R3-Änderung ohne geänderte Regressionstests.")
+            raise SystemExit(1)
+        print("Ergebnis: Regressionsschutz ist im Diff berücksichtigt.")
+        return
+
+    if args.mode == "compliance":
+        missing: list[str] = []
+        if code and "CHANGELOG.md" not in files:
+            missing.append("CHANGELOG.md")
+        if code and "PROJEKTSTATUS.md" not in files:
+            missing.append("PROJEKTSTATUS.md")
+        if risk == "R3" and "projekt-manifest.json" not in files:
+            missing.append("projekt-manifest.json")
+        if agent_changes and "AGENTS.md" not in files:
+            missing.append("AGENTS.md")
+        if missing:
+            print("BLOCKIERT: Pflichtartefakte fehlen: " + ", ".join(sorted(set(missing))))
+            raise SystemExit(1)
+        print("Ergebnis: Plan-/Scope-/Dokumentationskonformität bestanden.")
+        return
+
+    if args.mode == "release":
+        if risk == "R4":
+            print("BLOCKIERT: R4 darf nicht automatisch freigegeben werden.")
+            raise SystemExit(1)
+        diff_check = _run(["git", "diff", "--check", args.base or f"{args.head}^", args.head])
+        if diff_check.returncode:
+            print("BLOCKIERT: git diff --check meldet Format-/Whitespacefehler.")
+            print(diff_check.stdout + diff_check.stderr)
+            raise SystemExit(1)
+        if risk == "R3" and not tests:
+            print("BLOCKIERT: R3-Release ohne Teständerung.")
+            raise SystemExit(1)
+        print("Ergebnis: deterministische Release-Vorprüfung bestanden.")
+        return
+
+
+if __name__ == "__main__":
+    main()

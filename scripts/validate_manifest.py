@@ -8,12 +8,17 @@ if m.get("schema_version") != 1:
     errors.append("Manifest-schema_version muss 1 sein")
 app = m.get("app", {})
 if app.get("version") != "0.3.0" or app.get("status") != "iteration-3-job-action-core":
-    errors.append("App muss als Iteration-3-Jobkern v0.3.0 geführt werden")
+    errors.append("Freigegebener Laufzeitstand muss bis zur v0.4.0-Freigabe bei Iteration 3 / v0.3.0 bleiben")
+development = m.get("development", {})
+if development.get("active_iteration") != 4 or development.get("next_version") != "0.4.0":
+    errors.append("Aktive Entwicklung muss Iteration 4 / v0.4.0 sein")
+if development.get("stage") != "sorter-preview" or development.get("risk") != "R3" or development.get("release_status") != "in-development":
+    errors.append("Iteration-4-Entwicklung muss als R3 sorter-preview in-development geführt werden")
 iteration = m.get("iteration", {})
 if iteration.get("number") != 3 or iteration.get("stage") != "3.0" or iteration.get("release") != "0.3.0":
-    errors.append("Iterations-/Releasevertrag muss 3 / 3.0 / 0.3.0 sein")
+    errors.append("Freigegebener Iterationsvertrag muss bis Release 3 / 3.0 / 0.3.0 bleiben")
 if iteration.get("scope") != "job-action-core" or iteration.get("risk") != "R3":
-    errors.append("Iteration 3 muss als R3 job-action-core klassifiziert sein")
+    errors.append("Freigegebene Iteration 3 muss als R3 job-action-core klassifiziert sein")
 ui = m.get("ui", {})
 if ui.get("areas") != list("ABCDEFGHIJKLMN") or len(ui.get("themes", [])) != 5:
     errors.append("A-N-/Theme-Vertrag verletzt")
@@ -35,6 +40,8 @@ if quality.get("backup_contract_test") != "tests/test_backup_snapshots.py":
     errors.append("Backup-Snapshot-Vertragstest fehlt")
 if quality.get("job_contract_test") != "tests/test_job_manager.py":
     errors.append("Jobmanager-Vertragstest fehlt")
+if quality.get("sorter_contract_test") != "tests/test_sorter_preview.py":
+    errors.append("Sortier-Vorschau-Vertragstest fehlt")
 backup = m.get("backup", {})
 if backup.get("strategy") != "verified-git-archive-snapshot-branch":
     errors.append("Backupstrategie muss verifizierte Git-Archive verwenden")
@@ -76,7 +83,25 @@ if set(actions.get("statuses", [])) != {"planned","applied","skipped","failed","
 if actions.get("planning_changes_files") is not False or actions.get("undo_requires_applied_and_reversible") is not True:
     errors.append("Vorschau-/Undo-Sicherheitsvertrag verletzt")
 if actions.get("destructive_delete_supported") is not False:
-    errors.append("Endgültiges Löschen darf in Iteration 3 nicht unterstützt werden")
+    errors.append("Endgültiges Löschen darf nicht unterstützt werden")
+sorter = m.get("sorter_preview", {})
+if sorter.get("source_read_only") is not True or sorter.get("same_project_database") is not True:
+    errors.append("Sortier-Vorschau muss read-only auf derselben Projektdatenbank arbeiten")
+if sorter.get("feature_schema_version") != 1 or sorter.get("verified_backup_before_first_schema_create") is not True:
+    errors.append("Sortier-Feature-Schema-/Backupvertrag verletzt")
+if sorter.get("recursive_default") is not False or sorter.get("include_hidden_default") is not False or sorter.get("follow_symlinks") is not False:
+    errors.append("Sortier-Defaults müssen nicht-rekursiv, ohne versteckte Inhalte und ohne Symlink-Folgen sein")
+if set(sorter.get("categories", [])) != {"Bilder","Video","Audio","Dokumente","Archive","Text / Code","Sonstige"}:
+    errors.append("Sortier-Kategorienvertrag unvollständig")
+if set(sorter.get("decisions", [])) != {"matched","conflict","unmatched","skipped"}:
+    errors.append("Sortier-Entscheidungsvertrag unvollständig")
+for flag in ("rule_priority","equal_priority_different_targets_conflict","paging"):
+    if sorter.get(flag) is not True:
+        errors.append(f"Sortier-Vorschau-Vertrag fehlt: {flag}")
+if sorter.get("mutating_operations") != []:
+    errors.append("Sortier-Vorschau darf keine mutierenden Dateioperationen enthalten")
+if sorter.get("test") != "tests/test_sorter_preview.py":
+    errors.append("Sortier-Vorschau-Testvertrag fehlt")
 if set(m.get("agents", {})) != {"analysis","risk","root_cause","planning","regression","compliance","release"}:
     errors.append("Manifest muss exakt sieben Prüfrollen enthalten")
 self_repair = m.get("self_repair", {})
@@ -93,4 +118,4 @@ if errors:
     for error in errors:
         print("FEHLER:", error)
     raise SystemExit(1)
-print("OK   Manifest konsistent – Iteration 3 / Jobmanager & Aktionsjournal v0.3.0")
+print("OK   Manifest konsistent – v0.3.0 freigegeben / Iteration 4 Sortier-Vorschau v0.4.0 in Entwicklung")

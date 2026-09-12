@@ -24,9 +24,9 @@
 6. [x] transaktionales Datei-Aktionsjournal mit planned/applied/skipped/failed/undone implementiert.
 7. [x] Undo-Vertrag umgesetzt: nur angewendete, ausdrücklich reversible Aktionen sind Undo-Kandidaten.
 8. [x] lokale Job-/Journal-API ergänzt; Worker-Bestätigungen bleiben service-intern, keine externe Netzwerkfreigabe.
-9. [ ] vollständige Migration-, Lifecycle-, Crash/Resume-, Watchdog-, Journal- und API-Regression im finalen PR-Gate bestehen.
+9. [x] Migration-, Lifecycle-, Crash/Resume-, Watchdog-, Journal- und API-Regression bestanden; Gesamt-Discovery: 57 Tests grün.
 10. [x] Manifest, Changelog, Projektstatus, Architektur, Qualitätssicherung und Testübersicht synchronisiert.
-11. [ ] vollständiges PR Release-Gate + sieben Subagent-Gates bestehen.
+11. [x] Release-Gate mit 16 sichtbaren Stufen + alle sieben Subagent-Gates auf Implementierungshead `eb7881d7…` bestanden; jeder nachfolgende Doku-Head muss vor Merge dieselben Gates erneut bestehen.
 12. [ ] nach Merge dieselben Gates auf `main` sowie reale Snapshot-Backuprotation prüfen.
 
 ## Danach – Dateisortierung als nutzbarer Workflow

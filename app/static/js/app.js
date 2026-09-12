@@ -4,6 +4,7 @@ const App = (() => {
   const $ = (id) => document.getElementById(id);
   const saved = (key, fallback) => localStorage.getItem(`provoware.${key}`) ?? fallback;
   const persist = (key, value) => localStorage.setItem(`provoware.${key}`, value);
+  let sorterLoader = null;
 
   const log = (message, kind = "info", announce = true) => {
     const icon = kind === "ok" ? "🟢" : kind === "warn" ? "🟡" : kind === "error" ? "🔴" : "🔵";
@@ -76,11 +77,37 @@ const App = (() => {
     body.append(h, p); hero.append(icon, body); showWorkspace(label.replace(/^[^\s]+\s/, ""), hero);
   }
 
+  async function openSorterWorkspace() {
+    if (!window.SorterUI) {
+      if (!sorterLoader) {
+        sorterLoader = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "/static/js/sorter.js";
+          script.async = true;
+          script.dataset.provowareSorter = "1";
+          script.addEventListener("load", resolve, { once: true });
+          script.addEventListener("error", () => reject(new Error("Dateien-Modul konnte nicht geladen werden.")), { once: true });
+          document.head.appendChild(script);
+        });
+      }
+      await sorterLoader;
+    }
+    if (!window.SorterUI) throw new Error("Dateien-Modul wurde nicht korrekt initialisiert.");
+    await window.SorterUI.openWorkspace();
+  }
+
   function bindNavigation() {
-    document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", () => {
+    document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", async () => {
       document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item === btn));
-      if (btn.dataset.module === "todo" && window.DataUI) window.DataUI.openTodoWorkspace(); else genericWorkspace(btn.textContent.trim());
-      log(`Modul ${btn.textContent.trim()} geöffnet.`, "info");
+      try {
+        if (btn.dataset.module === "todo" && window.DataUI) window.DataUI.openTodoWorkspace();
+        else if (btn.dataset.module === "dateien") await openSorterWorkspace();
+        else genericWorkspace(btn.textContent.trim());
+        log(`Modul ${btn.textContent.trim()} geöffnet.`, "info");
+      } catch (error) {
+        genericWorkspace(btn.textContent.trim());
+        log(error.message || "Modul konnte nicht geladen werden.", "error");
+      }
     }));
     $("focus-workspace").addEventListener("click", () => toggleFocus(true));
     $("exit-focus").addEventListener("click", () => toggleFocus(false));

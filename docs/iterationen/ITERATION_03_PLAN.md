@@ -3,7 +3,7 @@
 ## Ziel
 Iteration 3 legt das sichere Ausführungsfundament für den ersten produktiven Dateisortier-Workflow. Noch keine automatische Datei-Verschiebung und kein endgültiges Löschen.
 
-Produktversion: **v0.3.0**  
+Produktversion: **v0.3.0**
 Risikoklasse: **R3** – Datenbankmigration, Recovery, Dateipfade, Undo-/Resume-Verträge.
 
 ## Architekturentscheidung
@@ -73,12 +73,13 @@ Regeln:
 - Undo-Dateioperationen selbst kommen erst mit dem späteren sicheren Executor; diese Iteration liefert den verlässlichen Vertrag und die Persistenz.
 
 ## API-Scope
-Neue lokale Endpunkte für:
+Nutzer-/UI-nahe lokale Endpunkte für:
 - Job erstellen/listen/lesen,
-- Pause/Resume/Abbruch anfordern bzw. kontrolliert bestätigen,
-- Checkpoint/Heartbeat,
-- Job abschließen/fehlschlagen,
-- Aktionsjournal lesen.
+- Pause/Resume/Abbruch anfordern,
+- Jobereignisse lesen,
+- Aktionsjournal und Undo-Kandidaten lesen.
+
+Worker-interne Funktionen für Start, Checkpoint/Heartbeat, sichere Pause-/Abbruchbestätigung sowie Abschluss/Fehler bleiben bewusst im Python-Service und werden nicht als allgemeine HTTP-Schreibendpunkte veröffentlicht.
 
 Keine frei erreichbare Netzwerkbindung; bestehende stabile Fehlercodes bleiben erhalten.
 

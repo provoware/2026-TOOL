@@ -26,29 +26,25 @@
 
 ## 🟢 Iteration 2.1 – Reliability & Self-Repair v0.2.1
 1. [x] AGENTS.md v2 mit Risikoklassen, Trigger-Matrix, Self-Repair-Grenzen und Freigaberegeln.
-2. [x] Analyse-, Risiko-, Fehlerursachen-, Plan-, Regressions-, Plan-Prüfer- und Release-Prüfer-Rollen sauber trennen.
-3. [x] maschinenlesbare Agentenvertragsprüfung statt einfacher Text-Greps.
-4. [x] zentrale sichere Self-Repair-Schicht mit Allowlist/Denylist.
-5. [x] beschädigte Konfiguration nur aus verifizierter Rückfallkopie restaurieren und Original quarantänisieren.
-6. [x] Projektmarker strikt validieren; fremde/ungültige Projektordner niemals automatisch übernehmen.
-7. [x] fehlende Standardordner nur in validierten PROVOWARE-Projekten selbst reparieren.
-8. [x] SQLite-Recovery über bestehenden verifizierenden Datenkern integrieren.
-9. [x] Self-Repair-Status/Run als lokale API und Startprüfung integrieren.
-10. [x] Regressionstests für Konfig-Recovery, Kollisionen, Fremdordnerschutz, Quarantäne, API und Agentenverträge.
-11. [x] Manifest, Hilfe, Architektur, Qualitätsdoku, Changelog und Projektstatus synchronisieren.
-12. [x] vollständigen Branch-Head validiert und über PR #4 nach `main` gemergt.
+2. [x] sieben getrennte Prüfrollen.
+3. [x] maschinenlesbare Agentenvertragsprüfung.
+4. [x] sichere Self-Repair-Schicht mit Allowlist/Denylist.
+5. [x] Konfigurations-Recovery mit Quarantäne.
+6. [x] Projektmarker-/Fremdordner-/Symlink-Schutz.
+7. [x] SQLite-Recovery und Regression.
+8. [x] PR #4 validiert und nach `main` gemergt.
 
-## 🔵 Iteration 2.2 – UX, Feedback & Transparenz
-1. [ ] zentrales wiederverwendbares Feedback-/Prozesssystem.
-2. [ ] permanente kompakte Prozessleiste ohne Layoutsprünge.
-3. [ ] Warnungs-/Fehlerzähler und wichtige ARIA-Live-Rückmeldungen.
-4. [ ] einheitliche Busy-Zustände gegen Doppelklick/Doppelausführung.
-5. [ ] Zoom 100–200 % plus `Ctrl++`, `Ctrl+-`, `Ctrl+0` und `Ctrl+Mausrad`.
-6. [ ] Skip-Link, Fokusführung und größere Standard-Aktionsziele.
-7. [ ] Projekt, Self-Repair, Schnellspeicher und Todo an gemeinsames Feedback anbinden.
-8. [ ] Hilfe um Status-/Prozessmodell ergänzen.
-9. [ ] `docs/UX_STANDARD.md` und UX-Vertragstests ergänzen.
-10. [ ] vollständige Regression und sieben Agenten-Gates bestehen.
+## 🟢 Iteration 2.2 – UX, Feedback & Transparenz v0.2.2
+1. [x] zentrales wiederverwendbares Feedback-/Prozesssystem.
+2. [x] permanente kompakte Prozessleiste ohne Layoutsprünge.
+3. [x] Warnungs-/Fehlerzähler und wichtige ARIA-Live-Rückmeldungen.
+4. [x] einheitliche Busy-Zustände gegen Doppelklick/Doppelausführung.
+5. [x] Zoom 100–200 % plus `Ctrl++`, `Ctrl+-`, `Ctrl+0` und `Ctrl+Mausrad`.
+6. [x] Skip-Link, Fokusführung und größere Standard-Aktionsziele.
+7. [x] Projekt, Self-Repair, Schnellspeicher und Todo an gemeinsames Feedback angebunden.
+8. [x] Hilfe um Status-/Prozessmodell ergänzt.
+9. [x] `docs/UX_STANDARD.md`, UX-Audit und UX-Vertragstests ergänzt.
+10. [x] Kandidaten-Release-Gate und sieben Agenten-Gates bestanden; v0.2.2 promoviert.
 
 ## Danach – nächste Fachausbaustufe
 - Download-/Dateisortier-Workflow als erster unmittelbar produktiver Laien-Workflow.

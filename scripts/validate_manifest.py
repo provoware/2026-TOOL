@@ -7,18 +7,18 @@ errors = []
 if m.get("schema_version") != 1:
     errors.append("Manifest-schema_version muss 1 sein")
 app = m.get("app", {})
-if app.get("version") != "0.3.0" or app.get("status") != "iteration-3-job-action-core":
-    errors.append("Freigegebener Laufzeitstand muss bis zur v0.4.0-Freigabe bei Iteration 3 / v0.3.0 bleiben")
+if app.get("version") != "0.4.0" or app.get("status") != "iteration-4-sorter-preview":
+    errors.append("Produktlaufzeit muss Iteration 4 / v0.4.0 Sortier-Vorschau sein")
 development = m.get("development", {})
-if development.get("active_iteration") != 4 or development.get("next_version") != "0.4.0":
-    errors.append("Aktive Entwicklung muss Iteration 4 / v0.4.0 sein")
-if development.get("stage") != "sorter-preview" or development.get("risk") != "R3" or development.get("release_status") != "in-development":
-    errors.append("Iteration-4-Entwicklung muss als R3 sorter-preview in-development geführt werden")
+if development.get("active_iteration") != 4 or development.get("current_version") != "0.4.0":
+    errors.append("Aktiver Releasevertrag muss Iteration 4 / v0.4.0 sein")
+if development.get("stage") != "sorter-preview" or development.get("risk") != "R3" or development.get("release_status") != "release-candidate":
+    errors.append("Iteration 4 muss als R3 sorter-preview release-candidate geführt werden")
 iteration = m.get("iteration", {})
-if iteration.get("number") != 3 or iteration.get("stage") != "3.0" or iteration.get("release") != "0.3.0":
-    errors.append("Freigegebener Iterationsvertrag muss bis Release 3 / 3.0 / 0.3.0 bleiben")
-if iteration.get("scope") != "job-action-core" or iteration.get("risk") != "R3":
-    errors.append("Freigegebene Iteration 3 muss als R3 job-action-core klassifiziert sein")
+if iteration.get("number") != 4 or iteration.get("stage") != "4.0" or iteration.get("release") != "0.4.0":
+    errors.append("Iterations-/Releasevertrag muss 4 / 4.0 / 0.4.0 sein")
+if iteration.get("scope") != "sorter-preview" or iteration.get("risk") != "R3":
+    errors.append("Iteration 4 muss als R3 sorter-preview klassifiziert sein")
 ui = m.get("ui", {})
 if ui.get("areas") != list("ABCDEFGHIJKLMN") or len(ui.get("themes", [])) != 5:
     errors.append("A-N-/Theme-Vertrag verletzt")
@@ -118,4 +118,4 @@ if errors:
     for error in errors:
         print("FEHLER:", error)
     raise SystemExit(1)
-print("OK   Manifest konsistent – v0.3.0 freigegeben / Iteration 4 Sortier-Vorschau v0.4.0 in Entwicklung")
+print("OK   Manifest konsistent – Iteration 4 / Read-only Sortier-Analyse & Vorschau v0.4.0 RC")

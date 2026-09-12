@@ -50,9 +50,9 @@ class AppContext:
         self._data_path: Path | None = None
         self._data: DataCore | None = None
 
-        project_path = self.store.active_project_path()
-        if project_path is not None:
-            self._last_repair.extend(self.repair.repair_project(project_path, DataCore))
+        configured_path = self.store.configured_project_path()
+        if configured_path is not None:
+            self._last_repair.extend(self.repair.repair_project(configured_path, DataCore))
         self._log_repair_summary(self._last_repair, "startup")
 
     def _build_logger(self) -> logging.Logger:
@@ -96,14 +96,14 @@ class AppContext:
             self._data_path = None
 
     def diagnose_self_repair(self) -> RepairReport:
-        return self.repair.diagnose(self.store.active_project_path())
+        return self.repair.diagnose(self.store.configured_project_path())
 
     def run_self_repair(self) -> RepairReport:
         report = self.repair.repair_config()
         if any(event.code == "CONFIG_RESTORED" for event in report.events):
             self.store = ProjectStore(self.config_dir)
-        project_path = self.store.active_project_path()
-        report.extend(self.repair.repair_project(project_path, DataCore))
+        configured_path = self.store.configured_project_path()
+        report.extend(self.repair.repair_project(configured_path, DataCore))
         self._last_repair = report
         if not report.blocking:
             self.invalidate_project_services()
@@ -111,7 +111,7 @@ class AppContext:
         return report
 
     def repair_after_project_change(self) -> RepairReport:
-        report = self.repair.repair_project(self.store.active_project_path(), DataCore)
+        report = self.repair.repair_project(self.store.configured_project_path(), DataCore)
         self._last_repair = report
         self.invalidate_project_services()
         self._log_repair_summary(report, "project-change")

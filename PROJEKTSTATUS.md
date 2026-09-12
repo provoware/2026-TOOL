@@ -4,7 +4,7 @@
 **v0.3.0 – Jobmanager & reversibles Aktionsjournal**
 
 ## Status
-🟡 **Release Candidate** – Implementierung und Regressionen sind angelegt; vollständige PR-Gates und `main`-Nachvalidierung stehen noch aus.
+🟢 **PR-freigabefähige Implementierung** – der fachliche Implementierungshead `eb7881d7…` bestand das vollständige Release-Gate und alle sieben Subagent-Gates. Nachfolgende reine Evidenz-/Dokumentationscommits müssen vor Merge dieselben Gates erneut bestehen. `main`-Nachvalidierung und reale Snapshotrotation bleiben nach dem Merge zwingend.
 
 ## Freigegebene Basis aus v0.2.x
 - Expert Shell A–N,
@@ -47,29 +47,23 @@ Neu vorhanden:
 - `POST /api/jobs/<id>/resume`
 - `POST /api/jobs/<id>/cancel`
 
-Worker-interne Bestätigungen bleiben Python-intern. Der Server bleibt localhost-only.
+Worker-interne Start-, Checkpoint-/Heartbeat-, Bestätigungs-, Abschluss- und Fehlerfunktionen bleiben Python-intern. Der Server bleibt localhost-only.
 
-## Neue automatische Evidenz
-`tests/test_job_manager.py` deckt ab:
-- v1→v2-Migration mit Bestandsschutz,
-- Lifecycle und ungültige Übergänge,
-- Checkpoint,
-- Pause/Resume,
-- Abbruch,
-- Startup-Recovery,
-- Watchdog,
-- Aktionsjournal,
-- Undo-Regeln,
-- Transaktionsrollback.
+## Automatische PR-Evidenz
+Auf Implementierungshead `eb7881d7d0cf15d5b8f1f6e4ff86fd543a68d74d`:
+- Release-Gate Run 39: 🟢 alle 16 sichtbaren Stufen erfolgreich.
+- Subagent-Gates Run 37: 🟢 Analyse, Risiko, Fehlerursache, Plan, Regression, Plan-Prüfung und Release-Prüfung erfolgreich.
+- automatische Gesamt-Discovery: **57 Tests grün**.
+- eigener Jobmanager-Gate: 🟢 10 Migration-/Lifecycle-/Resume-/Watchdog-/Journaltests erfolgreich.
+- HTTP-API-Vertrag: 🟢 einschließlich Job-/Journal-Endpunkte.
+- vorheriger Run 38 fand ausschließlich einen Markdown-Whitespacefehler; alle Fachtests waren bereits grün. Der Whitespacefehler wurde korrigiert und der komplette Gate-Satz anschließend erfolgreich wiederholt.
 
-`tests/test_api_contract.py` deckt zusätzlich den lokalen Job-/Journal-HTTP-Vertrag ab.
-
-## Noch offen vor Freigabe
-1. vollständiges Release-Gate auf finalem PR-Head,
-2. alle sieben Subagent-Gates,
-3. Squash-Merge auf unverändertem geprüften Head,
-4. dieselben Gates erneut auf `main`,
-5. reale Snapshot-Backuprotation nach Merge und Prüfung der zwei erzeugten Vorgängerslots.
+## Noch offen vor endgültiger Freigabe
+1. reine Evidenz-/Dokumentationscommits erneut vollständig über PR-Gates prüfen,
+2. Squash-Merge nur auf unverändertem geprüftem Head,
+3. Release- und sieben Subagent-Gates erneut auf dem gemergten `main`,
+4. reale Snapshot-Backuprotation nach Merge,
+5. `backup/snapshots/version-backups/manifest.json` und beide erzeugten Slots gegen die tatsächliche `main`-Historie prüfen.
 
 ## Bekannte externe Schutzlücke
 `main` ist repositoryseitig weiterhin nicht durch Branch-Protection/Ruleset geschützt. Automatische Gates sind aktiv, können einen ausreichend berechtigten direkten Push aber nicht technisch verhindern. Dieser Punkt bleibt in `docs/OFFENE_RISIKEN.md` dokumentiert.

@@ -9,7 +9,7 @@ required=(
   app/static/js/feedback.js app/static/js/app.js app/static/js/data.js app/static/js/startup.js app/static/help.json
   .agents/ANALYSE_AGENT.md .agents/RISIKO_AGENT.md .agents/FEHLERURSACHE_AGENT.md .agents/PLAN_AGENT.md
   .agents/REGRESSIONS_AGENT.md .agents/PLAN_PRUEFER.md .agents/RELEASE_PRUEFER.md
-  docs/ARCHITEKTUR.md docs/QUALITAETSSICHERUNG.md docs/STARTROUTINE.md docs/AGENTEN_WORKFLOW.md docs/HILFE.md docs/SELFREPAIR.md docs/UX_STANDARD.md docs/OFFENE_RISIKEN.md
+  docs/ARCHITEKTUR.md docs/QUALITAETSSICHERUNG.md docs/STARTROUTINE.md docs/AGENTEN_WORKFLOW.md docs/HILFE.md docs/SELFREPAIR.md docs/UX_STANDARD.md docs/OFFENE_RISIKEN.md docs/JOB_ACTION_CORE.md
   docs/iterationen/ITERATION_02_PLAN.md docs/iterationen/ITERATION_021_PLAN.md docs/iterationen/ITERATION_022_UX_PLAN.md
   docs/iterationen/HOTFIX_BACKUP_ROTATION.md docs/iterationen/ITERATION_023_BACKUP_HOTFIX.md docs/iterationen/ITERATION_03_PLAN.md
   standards/PROJEKTSTANDARD.md standards/DATENSTANDARD.md

@@ -4,26 +4,67 @@ on:
     branches: [main]
 permissions:
   contents: write
+
 jobs:
-  rotate-backups:
+  rotate:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 4}
-      - name: Vorherige zwei main-Stände als Rückfallzweige setzen
-        env:
-          BEFORE: ${{ github.event.before }}
+        with:
+          fetch-depth: 4
+      - name: Zwei vorherige main-Stände bestimmen
+        id: refs
+        shell: bash
         run: |
           set -euo pipefail
+          BEFORE="${{ github.event.before }}"
           if [[ -z "$BEFORE" || "$BEFORE" =~ ^0+$ ]]; then
-            echo "Kein vorheriger Commit vorhanden; Rotation übersprungen."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          git fetch origin "$BEFORE" --depth=2
-          git push --force origin "$BEFORE:refs/heads/backup/previous-1"
-          PREV2="$(git rev-parse "$BEFORE^" 2>/dev/null || true)"
-          if [[ -n "$PREV2" ]]; then
-            git push --force origin "$PREV2:refs/heads/backup/previous-2"
-          fi
-          echo "backup/previous-1 -> $BEFORE"
-          echo "backup/previous-2 -> ${PREV2:-nicht verfügbar}"
+          PREV2="$(git rev-parse "$BEFORE^1" 2>/dev/null || true)"
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "previous1=$BEFORE" >> "$GITHUB_OUTPUT"
+          echo "previous2=$PREV2" >> "$GITHUB_OUTPUT"
+      - name: Backup-Refs über GitHub API rotieren
+        if: steps.refs.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PREVIOUS1: ${{ steps.refs.outputs.previous1 }}
+          PREVIOUS2: ${{ steps.refs.outputs.previous2 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          set_ref() {
+            local name="$1" sha="$2"
+            [[ -n "$sha" ]] || return 0
+            if ! gh api --silent --method PATCH \
+              "repos/${GITHUB_REPOSITORY}/git/refs/heads/${name}" \
+              -f sha="$sha" -F force=true; then
+              gh api --silent --method POST \
+                "repos/${GITHUB_REPOSITORY}/git/refs" \
+                -f ref="refs/heads/${name}" -f sha="$sha"
+            fi
+          }
+          set_ref "backup/previous-1" "$PREVIOUS1"
+          set_ref "backup/previous-2" "$PREVIOUS2"
+      - name: Backup-Refs nachvalidieren
+        if: steps.refs.outputs.skip != 'true'
+        env:
+          PREVIOUS1: ${{ steps.refs.outputs.previous1 }}
+          PREVIOUS2: ${{ steps.refs.outputs.previous2 }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          verify_ref() {
+            local name="$1" expected="$2"
+            [[ -n "$expected" ]] || return 0
+            actual="$(git ls-remote origin "refs/heads/${name}" | awk '{print $1}')"
+            [[ "$actual" == "$expected" ]] || {
+              echo "FEHLER: ${name} erwartet ${expected}, erhalten ${actual:-NICHT_VORHANDEN}"
+              exit 1
+            }
+            echo "OK ${name} -> ${actual}"
+          }
+          verify_ref "backup/previous-1" "$PREVIOUS1"
+          verify_ref "backup/previous-2" "$PREVIOUS2"

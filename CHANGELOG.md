@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.2.2 – Backup-Rotationshotfix
+- Post-Merge-Backupfehler nach dem UX-Release als eigener Qualitätsbefund dokumentiert.
+- zwei Rückfallzweige sofort auf die korrekten vorherigen Hauptstände verifiziert und zurückgesetzt.
+- Backuprotation von `git push --force` auf GitHub Ref API umgestellt.
+- vorhandene Ref wird kontrolliert per PATCH aktualisiert; fehlende Ref kann per POST erzeugt werden.
+- beide Ziel-SHAs werden nach der Rotation mit `git ls-remote` nachvalidiert.
+- drei automatische Workflowvertragstests verhindern Rückkehr zum unvalidierten Force-Push-Verfahren.
+
 ## 0.2.2 – 2026-09-12 – UX, Feedback & Transparenz
 ### Nutzerführung
 - permanente kompakte Prozessleiste zeigt aktuelle Aktion, Detail und echten Fortschritt; bei nicht messbaren Vorgängen wird keine Prozentzahl erfunden.
@@ -32,34 +40,14 @@
 - ungültige Projektmarker, Dateikollisionen, Symlink-Ausbrüche und mehrdeutige Zustände werden nicht automatisch verändert.
 - konfigurierter Projektpfad und tatsächlich freigegebener Projektpfad sind getrennt.
 - Self-Repair-Ereignisse werden append-only als JSONL protokolliert.
-
-### Fehlerbehandlung
-- stabile lokale API-Fehlercodes.
-- interne Fehlerdetails bleiben im Log und werden nicht an die UI ausgegeben.
-- Self-Repair-Status und sicherer Run als lokale API.
-- blockierende Datenzustände bleiben rot, während die Diagnoseoberfläche erreichbar bleibt.
-
-### Agenten & Qualität
-- `AGENTS.md` v2 mit Risikomodell R0–R4.
-- sieben getrennte Prüfrollen: Analyse, Risiko, Fehlerursache, Planung, Regression, Plan-Prüfung und Release-Prüfung.
-- Prüfrollen sind read-only gegenüber Produktivcode.
-- R4 ist standardmäßig blockiert; Entfernen von Produktiv-, Test- oder Qualitätsverträgen wird als R4 erkannt.
-- maschinenlesbare Agentenvertragsprüfung und granulare Release-Gates.
+- stabile lokale API-Fehlercodes und granulare Release-Gates.
+- sieben getrennte read-only Prüfrollen mit R0–R4-Risikomodell.
 
 ## 0.2.0 – 2026-09-12
-### Neu
-- zentraler SQLite-Datenkern in eigener Serviceschicht.
-- WAL-Modus, Foreign Keys, Busy Timeout, Schema-Versionierung und explizite Transaktionen.
-- Todo-Bereich D mit optionalem Datum, Uhrzeit und Priorität.
-- reversibles Archiv und Wiederherstellung.
-- Monatskalender E liest Termine direkt aus derselben Todo-Tabelle.
+- zentraler SQLite-Datenkern mit WAL, Foreign Keys, Busy Timeout, Schema-Versionierung und expliziten Transaktionen.
+- Todo D, reversibles Archiv, Kalender E aus derselben Datenquelle.
 - verifizierte Datenbanksicherungen, Quarantäne und Crash-/Recovery-Regression.
 
 ## 0.1.0 – 2026-09-12
-### Neu
-- Expert Shell mit A–N-Dashboard und dominantem Hauptarbeitsbereich N.
-- echte gewichtete grafische Startpipeline.
-- fünf Themes und drei Bedienebenen.
-- lokaler Python-Server ohne externe Runtime-Abhängigkeiten.
-- sicherer Projektassistent, Schnellspeicher, Hilfesystem, Status-/Loggingbereich und Fokusmodus.
-- triggerbasierte Agentenrollen, deterministische CI-Gates und zwei rotierende Git-Rückfallstände.
+- Expert Shell mit A–N-Dashboard, gewichteter Startpipeline, fünf Themes und drei Bedienebenen.
+- lokaler Python-Server, sicherer Projektassistent, Schnellspeicher, Hilfe, Logging, Fokusmodus, Agentengates und zwei Git-Rückfallstände.

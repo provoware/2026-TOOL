@@ -25,7 +25,7 @@ class ShellTests(unittest.TestCase):
         self.assertEqual(manifest["development"]["current_version"], "0.4.0")
         self.assertEqual(manifest["development"]["stage"], "sorter-preview")
         self.assertEqual(manifest["development"]["risk"], "R3")
-        self.assertEqual(manifest["development"]["release_status"], "release-candidate")
+        self.assertEqual(manifest["development"]["release_status"], "released")
         self.assertEqual(manifest["ui"]["areas"], list("ABCDEFGHIJKLMN"))
         self.assertEqual(len(manifest["ui"]["themes"]), 5)
         self.assertFalse(manifest["quality"]["manual_user_acceptance_required"])

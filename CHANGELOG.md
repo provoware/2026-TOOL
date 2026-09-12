@@ -1,5 +1,33 @@
 # Changelog
 
+## 0.4.0 – in Entwicklung – Read-only Sortier-Analyse & Vorschau
+### Sicherheitsarchitektur
+- neue Iteration beginnt ausdrücklich read-only gegenüber Nutzdateien.
+- kein copy, move, rename oder delete im Scanner-Scope.
+- Quellwurzel-Symlinks werden blockiert; Symlinks innerhalb des Scans werden nicht verfolgt und mit Grund als übersprungen protokolliert.
+- rekursiver Scan ist standardmäßig aus; versteckte sowie bekannte System-/Cachebereiche sind standardmäßig aus.
+
+### Scanner / Regeln
+- neues `app/sorter_preview.py` als getrennte R3-Fachgrenze auf dem bestehenden Jobmanager.
+- persistente zeilenweise Scan-Ergebnisse in derselben Projekt-SQLite statt großer Job-JSON-Ergebnisse.
+- eigenes Feature-Schema v1; vor der erstmaligen Anlage wird eine verifizierte SQLite-Sicherung erzeugt.
+- deterministische Kategorien: Bilder, Video, Audio, Dokumente, Archive, Text / Code, Sonstige.
+- Regeln unterstützen Zielgruppe, Priorität, Dateiendungen, Suchwörter und Kategorie.
+- höhere Priorität gewinnt; gleich priorisierte Gewinner mit unterschiedlichen Zielgruppen werden als `conflict` markiert statt automatisch entschieden.
+- alle Regeltreffer bleiben in der Vorschau nachvollziehbar.
+
+### Robustheit
+- verschwundene oder nicht lesbare Einträge werden mit Klartextgrund übersprungen; der übrige Scan kann fortgesetzt werden.
+- Scanergebnisse werden in Batches persistiert und über vorhandene Job-Checkpoints abgesichert.
+- Vorschau ist paginierbar; gespeicherte Metadaten bilden später die Basis für Stale-Prüfungen vor echten Dateioperationen.
+
+### Qualität
+- verbindlicher R3-Plan `docs/iterationen/ITERATION_04_SORTER_PREVIEW_PLAN.md` wurde vor Implementierung angelegt.
+- neuer Vertragstest `tests/test_sorter_preview.py` für Schema/Backup, Rekursion, Symlinks, Skip-Gründe, Kategorien, Regelpriorität, Konflikte, Paging und Nicht-Veränderung der Quelle.
+- `sorter_preview.py` ist im Agent-Risikogate ausdrücklich R3.
+- Release-Gate erhält eine eigene sichtbare Sortier-Vorschau-Stufe.
+- API- und UI-Anbindung sind noch offen; v0.4.0 ist daher noch nicht freigegeben.
+
 ## 0.3.0 – 2026-09-12 – Jobmanager & reversibles Aktionsjournal
 ### Datenkern / Migration
 - zentrale Projektdatenbank von Schema v1 auf v2 erweitert.

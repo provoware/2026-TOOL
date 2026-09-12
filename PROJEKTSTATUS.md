@@ -1,12 +1,12 @@
 # Projektstatus
 
 ## Version
-0.2.0 – Iteration 2 „Datenkern“ – Release Candidate
+0.2.0 – Iteration 2 „Datenkern“
 
 ## Status
-🟡 RC – Implementierung vollständig; unabhängiges GitHub-Release-Gate auf dem finalen Branchstand steht noch aus.
+🟢 Freigabefähig – vollständiger Iterationsdiff hat GitHub Release-Gate sowie Analyse-, Plan- und Plan-Prüfer-Gates bestanden.
 
-## Automatisch vorvalidiert
+## Automatisch validiert
 - SQLite WAL/Schema/Integrität
 - Transaktions-Rollback
 - Restart/Persistenz
@@ -17,6 +17,8 @@
 - Kalenderprojektion aus derselben Todo-Datenquelle
 - HTTP-API-Vertrag Todo → Kalender → Archiv → Restore
 - Expert-Shell A–N, Themes, Projektisolation, Schnellspeicher und Hilfe
+- GitHub Release-Gate: bestanden
+- Subagent-Gates Analyse → Plan → Plan-Prüfung: bestanden
 - Nutzer-Abnahme: nicht erforderlich
 
 ## Enthalten
@@ -29,4 +31,4 @@
 - verbindlicher Datenstandard und erweiterte Regression
 
 ## Freigaberegel
-Status wird erst auf 🟢 Freigegeben gesetzt, wenn das GitHub-Release-Gate, Subagent-Gates und Backuprotation für den finalen `main`-Commit erfolgreich abgeschlossen sind.
+Dieser Stand darf auf `main` übernommen werden. Nach dem Merge wird derselbe Release-Gate-Zyklus auf `main` erneut ausgeführt und die Zwei-Versionen-Backuprotation kontrolliert.

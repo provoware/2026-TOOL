@@ -5,36 +5,87 @@ on:
   pull_request:
 permissions:
   contents: read
+
 jobs:
   analyse:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 3}
+        with: {fetch-depth: 0}
       - name: Nur analysieren
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: python3 scripts/agent_gate.py --mode analyse --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
-  plan:
+
+  risiko:
     needs: analyse
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 3}
+        with: {fetch-depth: 0}
+      - name: Risiko R0 bis R4 bestimmen
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 scripts/agent_gate.py --mode risk --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  fehlerursache:
+    needs: risiko
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Root-Cause-Trigger prüfen
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 scripts/agent_gate.py --mode rootcause --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  plan:
+    needs: fehlerursache
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - name: Plan und TODO prüfen
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: python3 scripts/agent_gate.py --mode plan --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
-  plan-pruefung:
+
+  regression:
     needs: plan
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with: {fetch-depth: 3}
+        with: {fetch-depth: 0}
+      - name: Regressionsschutz prüfen
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 scripts/agent_gate.py --mode regression --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  plan-pruefung:
+    needs: regression
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
       - name: Umsetzung gegen Plan prüfen
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
           HEAD_SHA: ${{ github.sha }}
         run: python3 scripts/agent_gate.py --mode compliance --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+
+  release-pruefung:
+    needs: plan-pruefung
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Finalen Diff freigabeprüfen
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+        run: python3 scripts/agent_gate.py --mode release --base "$BASE_SHA" --head "$HEAD_SHA" | tee -a "$GITHUB_STEP_SUMMARY"

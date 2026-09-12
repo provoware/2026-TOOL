@@ -1,85 +1,13 @@
 {
-  "agents": {
-    "analysis": ".agents/ANALYSE_AGENT.md",
-    "risk": ".agents/RISIKO_AGENT.md",
-    "root_cause": ".agents/FEHLERURSACHE_AGENT.md",
-    "planning": ".agents/PLAN_AGENT.md",
-    "regression": ".agents/REGRESSIONS_AGENT.md",
-    "compliance": ".agents/PLAN_PRUEFER.md",
-    "release": ".agents/RELEASE_PRUEFER.md"
-  },
-  "app": {
-    "id": "provoware-headquarter",
-    "name": "PROVOWARE HEADQUARTER",
-    "status": "iteration-2.1-reliability-selfrepair",
-    "version": "0.2.1"
-  },
-  "backup": {
-    "branches": ["backup/previous-1", "backup/previous-2"],
-    "database_verified_keep": 2,
-    "keep_previous": 2,
-    "strategy": "rotating-git-branches"
-  },
-  "data": {
-    "archive_strategy": "logical-reversible",
-    "backup_keep": 2,
-    "busy_timeout_ms": 5000,
-    "calendar_source": "todos",
-    "engine": "sqlite3",
-    "foreign_keys": true,
-    "journal_mode": "WAL",
-    "recovery": "verified-backup-with-quarantine",
-    "schema_version": 1
-  },
-  "error_handling": {
-    "stable_api_codes": true,
-    "unknown_internal_details_exposed": false,
-    "categories": ["VALIDATION", "NOT-FOUND", "CONFLICT", "PERMISSION", "DATA-INTEGRITY", "INTERNAL"]
-  },
-  "iteration": {
-    "name": "Reliability & Self-Repair",
-    "number": 2,
-    "stage": "2.1",
-    "release": "0.2.1"
-  },
-  "quality": {
-    "agent_contract_validation": "scripts/validate_agents.py",
-    "crash_recovery_tests": true,
-    "manual_user_acceptance_required": false,
-    "post_validation": true,
-    "pre_validation": true,
-    "regression_required": true,
-    "release_gate": "scripts/validate_all.sh",
-    "risk_model": "R0-R4",
-    "self_repair_guarded": true
-  },
-  "runtime": {
-    "bind": "127.0.0.1",
-    "external_dependencies": [],
-    "python_min": "3.10"
-  },
-  "schema_version": 1,
-  "self_repair": {
-    "automatic_scope": [
-      "verified-config-restore",
-      "quarantine-corrupt-config",
-      "recreate-missing-project-directories-after-marker-validation",
-      "verified-sqlite-recovery"
-    ],
-    "forbidden_scope": [
-      "delete-user-data",
-      "overwrite-user-data",
-      "invent-project-marker",
-      "adopt-foreign-nonempty-directory",
-      "restore-unverified-backup",
-      "auto-resolve-ambiguous-user-state"
-    ],
-    "log": "append-only-jsonl"
-  },
-  "ui": {
-    "areas": ["A","B","C","D","E","F","G","H","I","J","K","L","M","N"],
-    "complexity_levels": ["laie","profi","experte"],
-    "main_workspace": "N",
-    "themes": ["carbon","violet","steel","nordic","terminal"]
-  }
+  "agents":{"analysis":".agents/ANALYSE_AGENT.md","risk":".agents/RISIKO_AGENT.md","root_cause":".agents/FEHLERURSACHE_AGENT.md","planning":".agents/PLAN_AGENT.md","regression":".agents/REGRESSIONS_AGENT.md","compliance":".agents/PLAN_PRUEFER.md","release":".agents/RELEASE_PRUEFER.md"},
+  "app":{"id":"provoware-headquarter","name":"PROVOWARE HEADQUARTER","status":"iteration-2.2-ux-transparency","version":"0.2.2"},
+  "backup":{"branches":["backup/previous-1","backup/previous-2"],"database_verified_keep":2,"keep_previous":2,"strategy":"rotating-git-branches"},
+  "data":{"archive_strategy":"logical-reversible","backup_keep":2,"busy_timeout_ms":5000,"calendar_source":"todos","engine":"sqlite3","foreign_keys":true,"journal_mode":"WAL","recovery":"verified-backup-with-quarantine","schema_version":1},
+  "error_handling":{"stable_api_codes":true,"unknown_internal_details_exposed":false,"categories":["VALIDATION","NOT-FOUND","CONFLICT","PERMISSION","DATA-INTEGRITY","INTERNAL"]},
+  "iteration":{"name":"UX, Feedback & Transparenz","number":2,"stage":"2.2","release":"0.2.2"},
+  "quality":{"agent_contract_validation":"scripts/validate_agents.py","crash_recovery_tests":true,"manual_user_acceptance_required":false,"post_validation":true,"pre_validation":true,"regression_required":true,"release_gate":"scripts/validate_all.sh","risk_model":"R0-R4","self_repair_guarded":true,"ux_contract_test":"tests/test_ux_contract.py"},
+  "runtime":{"bind":"127.0.0.1","external_dependencies":[],"python_min":"3.10"},
+  "schema_version":1,
+  "self_repair":{"automatic_scope":["verified-config-restore","quarantine-corrupt-config","recreate-missing-project-directories-after-marker-validation","verified-sqlite-recovery"],"forbidden_scope":["delete-user-data","overwrite-user-data","invent-project-marker","adopt-foreign-nonempty-directory","restore-unverified-backup","auto-resolve-ambiguous-user-state"],"log":"append-only-jsonl"},
+  "ui":{"areas":["A","B","C","D","E","F","G","H","I","J","K","L","M","N"],"complexity_levels":["laie","profi","experte"],"main_workspace":"N","themes":["carbon","violet","steel","nordic","terminal"],"font_scale_percent":{"min":90,"max":200},"high_contrast":true,"global_feedback":true,"process_counters":["ok","warn","error","skipped"],"skip_link":true,"screenreader_live_status":true}
 }

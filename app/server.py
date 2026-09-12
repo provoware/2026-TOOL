@@ -20,7 +20,7 @@ from urllib.parse import parse_qs, unquote, urlparse
 
 APP_ID = "provoware-headquarter"
 APP_NAME = "PROVOWARE HEADQUARTER"
-APP_VERSION = "0.2.2"
+APP_VERSION = "0.3.0"
 ROOT = Path(__file__).resolve().parents[1]
 APP_DIR = Path(__file__).resolve().parent
 STATIC_ROOT = APP_DIR / "static"
@@ -28,6 +28,7 @@ if str(APP_DIR) not in sys.path:
     sys.path.insert(0, str(APP_DIR))
 
 from data_core import DataCore, DataIntegrityError, DataNotFoundError, DataValidationError
+from job_manager import JobManager
 from project_store import PROJECT_DIRS, ProjectStore, load_json
 from self_repair import RepairReport, SelfRepairCoordinator
 
@@ -38,6 +39,9 @@ def _config_dir() -> Path:
 
 
 class AppContext:
+    WATCHDOG_INTERVAL_SECONDS = 10
+    WATCHDOG_STALE_SECONDS = 30
+
     def __init__(self) -> None:
         self.config_dir = _config_dir()
         self.repair = SelfRepairCoordinator(self.config_dir, PROJECT_DIRS)
@@ -46,14 +50,24 @@ class AppContext:
         self.previous_unclean = self.store.session_marker.exists()
         self.store.session_marker.write_text(str(os.getpid()), encoding="utf-8")
         self.logger = self._build_logger()
-        self._data_lock = threading.RLock()
+        self._service_lock = threading.RLock()
         self._data_path: Path | None = None
         self._data: DataCore | None = None
+        self._jobs_path: Path | None = None
+        self._jobs: JobManager | None = None
+        self._watchdog_stop = threading.Event()
 
         configured_path = self.store.configured_project_path()
         if configured_path is not None:
             self._last_repair.extend(self.repair.repair_project(configured_path, DataCore))
         self._log_repair_summary(self._last_repair, "startup")
+
+        self._watchdog_thread = threading.Thread(
+            target=self._watchdog_loop,
+            name="provoware-job-watchdog",
+            daemon=True,
+        )
+        self._watchdog_thread.start()
 
     def _build_logger(self) -> logging.Logger:
         log_dir = self.store.config_dir / "logs"
@@ -89,6 +103,25 @@ class AppContext:
             len(report.events),
         )
 
+    def _watchdog_loop(self) -> None:
+        while not self._watchdog_stop.wait(self.WATCHDOG_INTERVAL_SECONDS):
+            try:
+                if self.store.active_project_path() is None:
+                    continue
+                interrupted = self.job_manager().watchdog(
+                    stale_after_seconds=self.WATCHDOG_STALE_SECONDS
+                )
+                if interrupted:
+                    self.logger.warning(
+                        "Job-Watchdog setzte %d Job(s) auf interrupted: %s",
+                        len(interrupted),
+                        ",".join(interrupted),
+                    )
+            except RuntimeError:
+                continue
+            except Exception:
+                self.logger.exception("Job-Watchdog fehlgeschlagen")
+
     def bootstrap(self) -> dict:
         payload = self.store.bootstrap()
         payload.update(
@@ -105,14 +138,26 @@ class AppContext:
         project_path = self.store.active_project_path()
         if project_path is None:
             raise RuntimeError("Kein verfügbares Projekt eingerichtet.")
-        with self._data_lock:
+        with self._service_lock:
             if self._data is None or self._data_path != project_path:
                 self._data = DataCore(project_path)
                 self._data_path = project_path
             return self._data
 
+    def job_manager(self) -> JobManager:
+        project_path = self.store.active_project_path()
+        if project_path is None:
+            raise RuntimeError("Kein verfügbares Projekt eingerichtet.")
+        with self._service_lock:
+            if self._jobs is None or self._jobs_path != project_path:
+                self._jobs = JobManager(self.data_core(), recover_incomplete=True)
+                self._jobs_path = project_path
+            return self._jobs
+
     def invalidate_project_services(self) -> None:
-        with self._data_lock:
+        with self._service_lock:
+            self._jobs = None
+            self._jobs_path = None
             self._data = None
             self._data_path = None
 
@@ -139,8 +184,14 @@ class AppContext:
         return report
 
     def clean_shutdown(self) -> None:
+        self._watchdog_stop.set()
+        self._watchdog_thread.join(timeout=2)
         try:
-            with self._data_lock:
+            with self._service_lock:
+                if self._jobs is not None:
+                    interrupted = self._jobs.recover_incomplete_jobs("clean-shutdown")
+                    if interrupted:
+                        self.logger.info("%d aktive Job(s) für Resume als interrupted gespeichert", len(interrupted))
                 if self._data is not None and self._data.db_path.exists():
                     try:
                         self._data.create_verified_backup("clean")
@@ -152,7 +203,7 @@ class AppContext:
 
 
 class Handler(BaseHTTPRequestHandler):
-    server_version = "PROVOWARE/0.2.2"
+    server_version = "PROVOWARE/0.3.0"
 
     @property
     def app(self) -> AppContext:
@@ -183,6 +234,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def _data(self) -> DataCore:
         return self.app.data_core()
+
+    def _jobs(self) -> JobManager:
+        return self.app.job_manager()
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
@@ -221,6 +275,26 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/calendar":
                 month = query.get("month", [""])[0]
                 self._json(HTTPStatus.OK, self._data().calendar_month(month))
+                return
+            if path == "/api/jobs":
+                status_filter = query.get("status", [None])[0]
+                limit = int(query.get("limit", [100])[0])
+                self._json(HTTPStatus.OK, {"items": self._jobs().list_jobs(status_filter, limit=limit)})
+                return
+            if path == "/api/jobs/summary":
+                self._json(HTTPStatus.OK, self._jobs().summary())
+                return
+            match = re.fullmatch(r"/api/jobs/([0-9a-f]{32})(?:/(events|actions|undo-candidates))?", path)
+            if match:
+                job_id, detail = match.groups()
+                if detail == "events":
+                    self._json(HTTPStatus.OK, {"items": self._jobs().list_events(job_id)})
+                elif detail == "actions":
+                    self._json(HTTPStatus.OK, {"items": self._jobs().list_actions(job_id)})
+                elif detail == "undo-candidates":
+                    self._json(HTTPStatus.OK, {"items": self._jobs().undo_candidates(job_id)})
+                else:
+                    self._json(HTTPStatus.OK, {"job": self._jobs().get_job(job_id)})
                 return
             self._serve_static(path)
         except Exception as exc:
@@ -273,6 +347,24 @@ class Handler(BaseHTTPRequestHandler):
                     else self._data().restore_todo(todo_id)
                 )
                 self._json(HTTPStatus.OK, {"todo": item})
+                return
+            if path == "/api/jobs":
+                item = self._jobs().create_job(
+                    str(data.get("kind", "")),
+                    data.get("payload") if "payload" in data else {},
+                )
+                self._json(HTTPStatus.CREATED, {"job": item})
+                return
+            match = re.fullmatch(r"/api/jobs/([0-9a-f]{32})/(pause|resume|cancel)", path)
+            if match:
+                job_id, action = match.groups()
+                if action == "pause":
+                    item = self._jobs().request_pause(job_id)
+                elif action == "resume":
+                    item = self._jobs().resume_job(job_id)
+                else:
+                    item = self._jobs().request_cancel(job_id)
+                self._json(HTTPStatus.OK, {"job": item})
                 return
             self._json(HTTPStatus.NOT_FOUND, {"error": "Unbekannter API-Endpunkt.", "code": "NOT-FOUND"})
         except Exception as exc:

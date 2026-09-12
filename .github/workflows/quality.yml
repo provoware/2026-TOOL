@@ -24,8 +24,8 @@ jobs:
         run: >-
           python3 -m py_compile
           app/server.py app/project_store.py app/data_core.py app/self_repair.py app/job_manager.py app/sorter_preview.py
-          scripts/build_backup_snapshots.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py
-          tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py tests/test_sorter_preview.py
+          scripts/build_backup_snapshots.py scripts/build_release_package.py scripts/validate_manifest.py scripts/validate_agents.py scripts/agent_gate.py
+          tests/test_shell.py tests/test_data_core.py tests/test_api_contract.py tests/test_self_repair.py tests/test_job_manager.py tests/test_sorter_preview.py tests/test_release_package.py
           tests/test_agent_gate.py tests/test_ux_contract.py tests/test_backup_workflow.py tests/test_backup_snapshots.py
       - name: 05 · JavaScript-Syntax
         run: |
@@ -58,3 +58,15 @@ jobs:
         run: python3 -m unittest discover -s tests -p 'test_*.py' -v
       - name: 17 · Vollständiges Release-Gate
         run: ./scripts/validate_all.sh
+      - name: Release-ZIP erzeugen und verifizieren
+        run: python3 scripts/build_release_package.py --output release-artifacts --commit HEAD
+      - name: Release-ZIP als Artefakt bereitstellen
+        uses: actions/upload-artifact@v4
+        with:
+          name: PROVOWARE-HEADQUARTER-v0.4.0
+          path: |
+            release-artifacts/PROVOWARE-HEADQUARTER-v0.4.0.zip
+            release-artifacts/PROVOWARE-HEADQUARTER-v0.4.0.zip.sha256
+            release-artifacts/release-package.json
+          if-no-files-found: error
+          retention-days: 30

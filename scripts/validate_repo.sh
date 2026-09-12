@@ -22,4 +22,4 @@ for file in "${required[@]}"; do
   if [[ -f "$file" ]]; then printf 'OK   %s\n' "$file"; else printf 'FEHLT %s\n' "$file"; missing=$((missing+1)); fi
 done
 (( missing == 0 )) || { printf '\nBLOCKIERT: %d Pflichtdatei(en) fehlen.\n' "$missing"; exit 1; }
-printf '\nRepository-Struktur vollständig – Iteration 4 Sortier-Vorschau in Entwicklung.\n'
+printf '\nRepository-Struktur vollständig – Iteration 4 / Read-only Sortier-Analyse & Vorschau v0.4.0.\n'

@@ -13,21 +13,26 @@ import sqlite3
 import threading
 from typing import Iterator
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 DB_FILENAME = "provoware.sqlite3"
 VALID_PRIORITIES = {"niedrig", "normal", "hoch"}
+
 
 class DataCoreError(RuntimeError):
     """Basisklasse für kontrollierte Datenkernfehler."""
 
+
 class DataValidationError(DataCoreError):
     """Ungültige Nutzdaten."""
+
 
 class DataNotFoundError(DataCoreError):
     """Angeforderter Datensatz existiert nicht."""
 
+
 class DataIntegrityError(DataCoreError):
     """Datenbankzustand ist nicht sicher verwendbar."""
+
 
 @dataclass(frozen=True)
 class HealthReport:
@@ -53,6 +58,7 @@ class HealthReport:
             "recovered": self.recovered,
             "recovery_source": self.recovery_source,
         }
+
 
 class DataCore:
     """Projektbezogener SQLite-Service. Keine geteilte Langzeit-Connection."""
@@ -91,6 +97,15 @@ class DataCore:
                 raise DataIntegrityError(f"SQLite-WAL konnte nicht aktiviert werden (Modus: {mode}).")
             conn.execute("PRAGMA synchronous = NORMAL")
         return conn
+
+    @contextmanager
+    def read_connection(self) -> Iterator[sqlite3.Connection]:
+        """Kurzlebige, konfigurierte Leseverbindung für interne Services."""
+        conn = self._connect()
+        try:
+            yield conn
+        finally:
+            conn.close()
 
     @contextmanager
     def transaction(self) -> Iterator[sqlite3.Connection]:
@@ -152,6 +167,10 @@ class DataCore:
                 if current < 1:
                     self._migrate_0_to_1(conn)
                     conn.execute("PRAGMA user_version = 1")
+                    current = 1
+                if current < 2:
+                    self._migrate_1_to_2(conn)
+                    conn.execute("PRAGMA user_version = 2")
 
     @staticmethod
     def _migrate_0_to_1(conn: sqlite3.Connection) -> None:
@@ -183,6 +202,71 @@ class DataCore:
             )""",
             """CREATE INDEX IF NOT EXISTS idx_todo_events_todo
                 ON todo_events(todo_id, created_at)""",
+        )
+        for statement in statements:
+            conn.execute(statement)
+
+    @staticmethod
+    def _migrate_1_to_2(conn: sqlite3.Connection) -> None:
+        statements = (
+            """CREATE TABLE IF NOT EXISTS jobs (
+                id TEXT PRIMARY KEY,
+                kind TEXT NOT NULL CHECK(length(trim(kind)) BETWEEN 1 AND 80),
+                status TEXT NOT NULL DEFAULT 'queued'
+                    CHECK(status IN ('queued','running','paused','cancelling','cancelled','completed','failed','interrupted')),
+                phase TEXT NOT NULL DEFAULT 'queued' CHECK(length(phase) <= 120),
+                payload_json TEXT NOT NULL DEFAULT '{}',
+                checkpoint_json TEXT NOT NULL DEFAULT '{}',
+                result_json TEXT NOT NULL DEFAULT '{}',
+                error_code TEXT NULL,
+                error_message TEXT NULL,
+                progress_done INTEGER NOT NULL DEFAULT 0 CHECK(progress_done >= 0),
+                progress_total INTEGER NOT NULL DEFAULT 0 CHECK(progress_total >= 0),
+                bytes_done INTEGER NOT NULL DEFAULT 0 CHECK(bytes_done >= 0),
+                bytes_total INTEGER NOT NULL DEFAULT 0 CHECK(bytes_total >= 0),
+                requested_control TEXT NOT NULL DEFAULT 'none'
+                    CHECK(requested_control IN ('none','pause','cancel')),
+                heartbeat_at TEXT NULL,
+                started_at TEXT NULL,
+                finished_at TEXT NULL,
+                resume_count INTEGER NOT NULL DEFAULT 0 CHECK(resume_count >= 0),
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )""",
+            """CREATE INDEX IF NOT EXISTS idx_jobs_status_updated
+                ON jobs(status, updated_at DESC)""",
+            """CREATE TABLE IF NOT EXISTS job_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id TEXT NOT NULL,
+                event_type TEXT NOT NULL CHECK(length(trim(event_type)) BETWEEN 1 AND 80),
+                payload_json TEXT NOT NULL DEFAULT '{}',
+                created_at TEXT NOT NULL,
+                FOREIGN KEY(job_id) REFERENCES jobs(id) ON DELETE RESTRICT
+            )""",
+            """CREATE INDEX IF NOT EXISTS idx_job_events_job
+                ON job_events(job_id, id)""",
+            """CREATE TABLE IF NOT EXISTS file_actions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                job_id TEXT NOT NULL,
+                sequence INTEGER NOT NULL CHECK(sequence > 0),
+                action_type TEXT NOT NULL
+                    CHECK(action_type IN ('copy','move','rename','mkdir')),
+                source_path TEXT NOT NULL DEFAULT '',
+                destination_path TEXT NOT NULL DEFAULT '',
+                status TEXT NOT NULL DEFAULT 'planned'
+                    CHECK(status IN ('planned','applied','skipped','failed','undone')),
+                reversible INTEGER NOT NULL DEFAULT 0 CHECK(reversible IN (0,1)),
+                before_json TEXT NOT NULL DEFAULT '{}',
+                after_json TEXT NOT NULL DEFAULT '{}',
+                reason TEXT NOT NULL DEFAULT '',
+                created_at TEXT NOT NULL,
+                applied_at TEXT NULL,
+                undone_at TEXT NULL,
+                FOREIGN KEY(job_id) REFERENCES jobs(id) ON DELETE RESTRICT,
+                UNIQUE(job_id, sequence)
+            )""",
+            """CREATE INDEX IF NOT EXISTS idx_file_actions_job_status
+                ON file_actions(job_id, status, sequence)""",
         )
         for statement in statements:
             conn.execute(statement)
@@ -346,11 +430,8 @@ class DataCore:
 
     def get_todo(self, todo_id: int) -> dict:
         self.ensure_ready()
-        conn = self._connect()
-        try:
+        with self.read_connection() as conn:
             row = conn.execute("SELECT * FROM todos WHERE id=?", (int(todo_id),)).fetchone()
-        finally:
-            conn.close()
         if row is None:
             raise DataNotFoundError("Todo wurde nicht gefunden.")
         return dict(row)
@@ -367,12 +448,9 @@ class DataCore:
             if scope != "archive"
             else "ORDER BY archived_at DESC, id DESC"
         )
-        conn = self._connect()
-        try:
+        with self.read_connection() as conn:
             rows = conn.execute(f"SELECT * FROM todos {where} {order}", params).fetchall()
-            return [dict(row) for row in rows]
-        finally:
-            conn.close()
+        return [dict(row) for row in rows]
 
     def archive_todo(self, todo_id: int) -> dict:
         self.ensure_ready()
@@ -413,8 +491,7 @@ class DataCore:
             normalized = parsed.strftime("%Y-%m")
         except ValueError as exc:
             raise DataValidationError("Kalendermonat muss YYYY-MM entsprechen.") from exc
-        conn = self._connect()
-        try:
+        with self.read_connection() as conn:
             rows = conn.execute(
                 """SELECT id,title,priority,due_date,due_time
                    FROM todos
@@ -422,8 +499,6 @@ class DataCore:
                    ORDER BY due_date,due_time,id""",
                 (normalized + "-%",),
             ).fetchall()
-        finally:
-            conn.close()
         days: dict[str, list[dict]] = {}
         for row in rows:
             item = dict(row)
@@ -433,8 +508,7 @@ class DataCore:
     def summary(self) -> dict:
         self.ensure_ready()
         today = date.today().isoformat()
-        conn = self._connect()
-        try:
+        with self.read_connection() as conn:
             active = int(conn.execute("SELECT count(*) FROM todos WHERE status='open'").fetchone()[0])
             archive = int(conn.execute("SELECT count(*) FROM todos WHERE status='archived'").fetchone()[0])
             due_today = int(
@@ -446,8 +520,6 @@ class DataCore:
                     (today,),
                 ).fetchone()[0]
             )
-        finally:
-            conn.close()
         return {
             "active_todos": active,
             "archived_todos": archive,

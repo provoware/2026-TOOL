@@ -18,25 +18,25 @@
 ## 🟢 Iteration 3 – Jobmanager & reversibles Aktionsjournal v0.3.0
 - [x] Jobmanager, Checkpoint/Resume, Watchdog, Aktionsjournal, Undo-Vertrag, 57 Tests, PR-/main-Gates und reale Snapshotrotation vollständig freigegeben.
 
-## 🔵 Iteration 4 – Read-only Sortier-Analyse & Vorschau v0.4.0
+## 🟡 Iteration 4 – Read-only Sortier-Analyse & Vorschau v0.4.0
 1. [x] verbindlichen R3-Plan vor Implementierung angelegt.
 2. [x] Scanner-/Regel-Engine als getrennten read-only Service angelegt.
-3. [x] persistente, zeilenweise Scan-Ergebnisse in derselben Projekt-SQLite vorgesehen; erstmalige Feature-Schemaanlage wird vorher verifiziert gesichert.
+3. [x] persistente, zeilenweise Scan-Ergebnisse in derselben Projekt-SQLite implementiert; erstmalige Feature-Schemaanlage wird vorher verifiziert gesichert.
 4. [x] Quellwurzel-Symlinks blockiert; Symlink-Inhalte werden niemals verfolgt.
 5. [x] rekursiv standardmäßig aus; versteckte/System-/Cache-Inhalte standardmäßig aus.
 6. [x] deterministische Kategorien Bilder/Video/Audio/Dokumente/Archive/Text-Code/Sonstige implementiert.
 7. [x] Regelpriorität, Mehrfachtreffer und Konfliktvertrag implementiert; Wortregel kann Dateitypregel überstimmen.
 8. [x] tolerantes Verhalten für verschwundene/unlesbare Einträge mit Klartextgrund implementiert.
-9. [x] Paging und Scan-Zusammenfassung im Service vorbereitet.
+9. [x] Paging und Scan-Zusammenfassung implementiert.
 10. [x] Scanner ausdrücklich als R3 klassifiziert und Agent-Gate-Regression ergänzt.
-11. [x] erste Scanner-Regressionen für Backup/Schema, Nicht-Rekursion, Symlinks, Skip-Gründe, Kategorien, Priorität, Konflikte, Paging und Nicht-Veränderung angelegt.
-12. [ ] Scanner-/Regeltests im echten GitHub-Gate vollständig grün verifizieren und Fehler ursachenbasiert beheben.
-13. [ ] localhost-only API für Ordnerauswahl, Scanstart, Summary und paginierte Vorschau anbinden.
-14. [ ] Dateien-Modul im Hauptarbeitsbereich als laienverständlichen Assistenten anbinden.
-15. [ ] globale Prozessanzeige mit Scanstatus/Dateien/Volumen/übersprungen verbinden.
-16. [ ] Manifest, Changelog, Projektstatus, Architektur, Hilfe und Testübersicht vollständig synchronisieren.
-17. [ ] vollständiges finales PR Release-Gate + sieben Subagent-Gates bestehen.
-18. [ ] nach Merge dieselben Gates auf `main` und reale Snapshotrotation prüfen.
+11. [x] Scanner-Regressionen für Backup/Schema, Nicht-Rekursion, Symlinks, Skip-Gründe, Kategorien, Priorität, Konflikte, Paging und Nicht-Veränderung angelegt.
+12. [x] Scanner-/Regeltests im echten GitHub-Gate grün; erster Fehler als unvollständiger `os.scandir()`-Test-Doppelgänger identifiziert, Test repariert, Produktlogik unverändert.
+13. [x] localhost-only API für grafische Ordnerauswahl, asynchronen Scanstart, Summary und paginierte Vorschau angebunden.
+14. [x] Dateien-Modul lazy-loaded als laienverständlichen Vier-Schritt-Assistenten angebunden.
+15. [x] globale Prozessanzeige mit Scanstatus, Dateien, Volumen, Pause/Weiter/Abbruch, Konflikten und Überspringgründen verbunden.
+16. [x] Manifest, Changelog, README, Projektstatus, Architektur, Hilfe, Qualitätssicherung und Testübersicht synchronisiert.
+17. [ ] finalen v0.4.0-Release-Head mit 76+ Tests, 17 Release-Stufen und allen sieben Subagent-Gates vollständig bestehen.
+18. [ ] Squash-Merge auf unverändertem geprüftem Head; danach dieselben Gates auf `main` und reale Snapshotrotation prüfen.
 
 ## Danach – sicherer Datei-Executor
 1. [ ] Zielordner und Konfliktstrategie ausschließlich nach erfolgreicher Vorschau freigeben.

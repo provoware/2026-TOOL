@@ -26,19 +26,25 @@
 - [x] Self-Repair-/API-/Shell-/Agentenregression
 - [x] Release- und Subagent-Gates bestanden und nach `main` gemergt
 
-## 🔵 Iteration 2.2 – UX, Feedback & Transparenz v0.2.2
-1. [ ] zentrales Feedback-/Prozessmodell statt verteilter Einzelmeldungen.
-2. [ ] globale Statusleiste: aktuelle Aktion, realer Fortschritt, Ergebnis.
-3. [ ] Standardzähler: OK / Hinweise / Fehler / übersprungen.
-4. [ ] Screenreader-Live-Region und unmittelbare Toast-Rückmeldung.
-5. [ ] Schriftregler auf 200 % erweitern und Kontrast+-Modus ergänzen.
-6. [ ] Busy/Disabled/Success/Warning/Error-Zustände vereinheitlichen.
-7. [ ] Laienführung „Nächster sinnvoller Schritt“ ergänzen.
-8. [ ] Diagnosebereich K übersichtlicher und transparenter machen.
-9. [ ] UX-Standard für Vorschau → Ausführung → Ergebnis → Undo/Recovery definieren.
-10. [ ] „übersprungen und warum“ als Pflichtvertrag für künftige Batchprozesse.
-11. [ ] UX-Vertragstests ergänzen; komplette bestehende Regression weiterführen.
-12. [ ] finalen Branch-Head und danach `main` automatisch validieren.
+## 🟢 Iteration 2.2 – UX, Feedback & Transparenz v0.2.2
+1. [x] zentrales Feedback-/Prozessmodell statt verteilter Einzelmeldungen.
+2. [x] globale Statusleiste: aktuelle Aktion, realer Fortschritt, Ergebnis.
+3. [x] Standardzähler: OK / Hinweise / Fehler / übersprungen.
+4. [x] Screenreader-Live-Region und unmittelbare Toast-Rückmeldung.
+5. [x] Schriftregler auf 200 % erweitert und Kontrast+-Modus ergänzt.
+6. [x] Busy/Disabled/Success/Warning/Error-Zustände vereinheitlicht.
+7. [x] Laienführung „Nächster sinnvoller Schritt“ ergänzt.
+8. [x] Diagnosebereich K übersichtlicher und transparenter gemacht.
+9. [x] UX-Standard für Vorschau → Ausführung → Ergebnis → Undo/Recovery definiert.
+10. [x] „übersprungen und warum“ als Pflichtvertrag für künftige Batchprozesse festgelegt.
+11. [x] UX-Vertragstests ergänzt; komplette bestehende Regression weitergeführt.
+12. [x] vollständiges Release-Gate und alle sieben Subagent-Gates auf dem RC-Head bestanden.
+
+## Offen vor endgültiger Hauptfreigabe
+- finalen Dokumentations-Head erneut automatisch prüfen.
+- PR #6 mergen.
+- denselben Stand auf `main` erneut prüfen.
+- Zwei-Versionen-Backuprotation verifizieren.
 
 ## Danach – Fachausbaustufe
 - Download-/Dateiregeln: Ordner wählen → analysieren → Dateitypen → Regel per Auswahl → Konfliktprüfung → Vorschau → sicher kopieren/verschieben → Ergebnis/Undo.

@@ -1,33 +1,32 @@
 # Projektstatus
 
 ## Version
-0.1.0 – Iteration 1 „Expert Shell“
+0.2.0 – Iteration 2 „Datenkern“ – Release Candidate
 
 ## Status
-🟢 Freigegeben – lokale Vorvalidierung und unabhängige GitHub-Nachvalidierung bestanden.
+🟡 RC – Implementierung vollständig; unabhängiges GitHub-Release-Gate auf dem finalen Branchstand steht noch aus.
 
-## Validierung
-- lokales Release-Gate: bestanden
-- 7 automatische Shell-/Persistenztests: bestanden
-- GitHub Release-Gate: bestanden
-- Subagent-Gates Analyse → Plan → Plan-Prüfung: bestanden
-- automatische Backuprotation: bestanden
+## Automatisch vorvalidiert
+- SQLite WAL/Schema/Integrität
+- Transaktions-Rollback
+- Restart/Persistenz
+- simulierter Prozessabsturz mit uncommitteter Transaktion
+- verifizierte Sicherung und Korruptions-Recovery
+- Backup-Retention auf zwei DB-Sicherungen
+- Todo Archiv/Wiederherstellung
+- Kalenderprojektion aus derselben Todo-Datenquelle
+- HTTP-API-Vertrag Todo → Kalender → Archiv → Restore
+- Expert-Shell A–N, Themes, Projektisolation, Schnellspeicher und Hilfe
 - Nutzer-Abnahme: nicht erforderlich
 
 ## Enthalten
-- lokale localhost-Shell ohne externe Runtime-Pakete
-- echte gewichtete Startpipeline mit Fehler-/Hinweisstatus
-- vollständige A–N-Oberfläche
-- fünf Themes
-- Laie/Profi/Experte + Schriftzoom
-- Projekt-Ersteinrichtung mit sicherer Standardstruktur
-- KDialog-Ordnerwahl mit Textfallback
-- Schnellspeicher mit Zeitstempel/Append
-- persistente Notiz und UI-Präferenzen
-- integrierte Hilfe
-- zwei Git-Rückfallstände + lokale Konfigurationsbackups
-- triggerbasierte Analyse-/Plan-/Prüfregeln
-- automatisches Release-Gate
+- getrennte Services für Projektpersistenz und SQLite-Datenkern
+- Todo D mit optionaler Terminierung und Priorität
+- reversibles Todo-Archiv
+- Monatskalender E ohne doppelte Terminspeicherung
+- Recovery mit Quarantäne des beschädigten Originals
+- Startprüfung für SQLite/WAL und unsauberen Sitzungszustand
+- verbindlicher Datenstandard und erweiterte Regression
 
-## Noch bewusst nicht Fachfunktion
-Todo, Datenbank, globale Suche und weitere Module sind in Iteration 1 als stabile Shell-Grenzen vorhanden; ihre vollständige Fachlogik folgt getrennt in der nächsten geplanten Iteration.
+## Freigaberegel
+Status wird erst auf 🟢 Freigegeben gesetzt, wenn das GitHub-Release-Gate, Subagent-Gates und Backuprotation für den finalen `main`-Commit erfolgreich abgeschlossen sind.

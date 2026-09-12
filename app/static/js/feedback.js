@@ -69,6 +69,7 @@ const Feedback = (() => {
     let finished = false;
     return {
       id,
+      get finished() { return finished; },
       update(percent, nextDetail = detail) {
         if (!finished) setProcess("busy", label, nextDetail || "Vorgang läuft …", percent);
       },
@@ -89,6 +90,7 @@ const Feedback = (() => {
     }
     try {
       const result = await operation(task);
+      task.end("ok", `${label} abgeschlossen.`);
       return result;
     } catch (error) {
       task.end("error", error?.message || `${label} ist fehlgeschlagen.`);

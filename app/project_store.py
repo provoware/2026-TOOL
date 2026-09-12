@@ -96,6 +96,11 @@ class ProjectStore:
         valid, _ = SelfRepairCoordinator.valid_project_marker(path)
         return valid
 
+    @staticmethod
+    def _project_structure_valid(path: Path) -> bool:
+        valid, _ = SelfRepairCoordinator.project_structure_valid(path, PROJECT_DIRS)
+        return valid
+
     def configured_project_path(self) -> Path | None:
         active = self.config.get("active_project")
         if not isinstance(active, dict):
@@ -107,16 +112,25 @@ class ProjectStore:
 
     def bootstrap(self) -> dict:
         active = self.config.get("active_project")
-        project_status = {"configured": False, "available": False, "path": None, "name": None, "marker_valid": False}
+        project_status = {
+            "configured": False,
+            "available": False,
+            "path": None,
+            "name": None,
+            "marker_valid": False,
+            "structure_valid": False,
+        }
         path = self.configured_project_path()
         if path is not None:
             marker_valid = self._project_marker_valid(path)
+            structure_valid = self._project_structure_valid(path) if marker_valid else False
             project_status = {
                 "configured": True,
-                "available": path.is_dir() and marker_valid,
+                "available": path.is_dir() and marker_valid and structure_valid,
                 "path": str(path),
                 "name": active.get("name") or path.name,
                 "marker_valid": marker_valid,
+                "structure_valid": structure_valid,
             }
         return {
             "profile": self.config.get("profile", {"name": "Lokaler Nutzer"}),
@@ -125,7 +139,7 @@ class ProjectStore:
 
     def active_project_path(self) -> Path | None:
         path = self.configured_project_path()
-        if path is None or not path.is_dir() or not self._project_marker_valid(path):
+        if path is None or not path.is_dir() or not self._project_structure_valid(path):
             return None
         return path
 
@@ -152,10 +166,14 @@ class ProjectStore:
         target.mkdir(parents=True, exist_ok=True)
         for dirname in PROJECT_DIRS:
             destination = target / dirname
+            if destination.is_symlink():
+                raise FileExistsError(f"Standardpfad '{dirname}' ist ein Symlink und wird aus Sicherheitsgründen nicht verwendet.")
             if destination.exists() and not destination.is_dir():
-                raise FileExistsError(f"Standardpfad '{dirname}' ist bereits als Datei vorhanden.")
+                raise FileExistsError(f"Standardpfad '{dirname}' ist bereits als Datei oder Sonderpfad vorhanden.")
             destination.mkdir(exist_ok=True)
         marker.parent.mkdir(exist_ok=True)
+        if marker.parent.is_symlink() or marker.is_symlink():
+            raise FileExistsError("Projektmarker darf nicht über einen Symlink umgeleitet werden.")
         if not marker.exists():
             atomic_write_json(marker, {
                 "schema_version": 1,
@@ -163,8 +181,8 @@ class ProjectStore:
                 "created_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
                 "app": APP_NAME,
             })
-        if not self._project_marker_valid(target):
-            raise RuntimeError("Projektmarker bestand die Nachvalidierung nicht.")
+        if not self._project_structure_valid(target):
+            raise RuntimeError("Projektstruktur bestand die Nachvalidierung nicht.")
 
         DataCore(target).ensure_ready()
         self.config["active_project"] = {"name": project_name, "path": str(target)}
@@ -174,7 +192,7 @@ class ProjectStore:
     def quick_save(self, title: str, text: str) -> Path:
         project_path = self.active_project_path()
         if project_path is None:
-            raise RuntimeError("Kein verfügbares Projekt eingerichtet.")
+            raise RuntimeError("Kein vollständig validiertes Projekt eingerichtet.")
         clean_title = re.sub(r"[^\w .-]+", "_", title.strip(), flags=re.UNICODE).strip(" .")
         if not clean_title:
             raise ValueError("Titel fehlt.")

@@ -11,7 +11,7 @@
 - [x] Analyse-, Plan- und Plan-Prüfer-Rollen
 - [x] Manifest- und Release-Gate-Grundlage
 
-## 🟡 Iteration 2 – Datenkern v0.2.0 RC
+## 🟢 Iteration 2 – Datenkern v0.2.0
 1. [x] SQLite-Service mit WAL, Foreign Keys, Busy Timeout und Schema-Version.
 2. [x] transaktionale Schreiblogik und Rollbacktests.
 3. [x] Todo D mit optionaler Terminierung, Priorität, Archiv und Wiederherstellung.
@@ -21,10 +21,10 @@
 7. [x] HTTP-API-Vertragstest.
 8. [x] Expert-Shell-Regression beibehalten.
 9. [x] Datenstandard, Manifest, Hilfe, Architektur und Changelog aktualisieren.
-10. [ ] finalen Branch durch unabhängiges GitHub-Release-Gate prüfen.
-11. [ ] nach erfolgreichem Gate auf `main` freigeben und Backuprotation prüfen.
+10. [x] vollständigen Iterationsdiff durch unabhängiges GitHub-Release-Gate prüfen.
+11. [x] Analyse-, Plan- und Plan-Prüfer-Gates für den vollständigen Diff bestanden.
 
-## Nächste sinnvolle Ausbaustufe nach Freigabe
+## Nächste sinnvolle Ausbaustufe
 - DB-Eingabemaske C als dynamisches Schema-/Formularsystem auf demselben Datenkern.
 - globale Suche H über Todo, Notizen, Schnellspeicher und spätere DB-Inhalte.
 - Organisationsbereich F weiter ausbauen, ohne Statistikduplikate zu erzeugen.

@@ -2,23 +2,150 @@
 const App = (() => {
   const state = { bootstrap: null, help: null };
   const $ = (id) => document.getElementById(id);
-  const log = (message, kind="info") => { const icon = kind === "ok" ? "🟢" : kind === "warn" ? "🟡" : kind === "error" ? "🔴" : "🔵"; const row = document.createElement("span"); row.textContent = `${icon} ${message}`; $("log-list").prepend(row); };
   const saved = (key, fallback) => localStorage.getItem(`provoware.${key}`) ?? fallback;
   const persist = (key, value) => localStorage.setItem(`provoware.${key}`, value);
-  function applyPreferences(){ const theme=saved("theme","carbon"),complexity=saved("complexity","laie"),font=saved("fontScale","100"); document.documentElement.dataset.theme=theme;document.documentElement.dataset.complexity=complexity;document.documentElement.style.setProperty("--font-scale",String(Number(font)/100));$("theme-select").value=theme;$("complexity-select").value=complexity;$("font-scale").value=font;$("font-value").value=`${font}%`; }
-  function bindPreferences(){ $("theme-select").addEventListener("change",e=>{document.documentElement.dataset.theme=e.target.value;persist("theme",e.target.value);log(`Theme ${e.target.options[e.target.selectedIndex].text} aktiviert.`,"ok")});$("complexity-select").addEventListener("change",e=>{document.documentElement.dataset.complexity=e.target.value;persist("complexity",e.target.value);log(`Bedienstufe ${e.target.options[e.target.selectedIndex].text} aktiviert.`,"ok")});$("font-scale").addEventListener("input",e=>{const v=e.target.value;document.documentElement.style.setProperty("--font-scale",String(Number(v)/100));$("font-value").value=`${v}%`;persist("fontScale",v)}); }
-  function renderCalendar(){ const now=new Date(),y=now.getFullYear(),m=now.getMonth(),names=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];$("calendar-label").textContent=`${names[m]} ${y}`;const cal=$("calendar");cal.replaceChildren();["Mo","Di","Mi","Do","Fr","Sa","So"].forEach(d=>{const s=document.createElement("span");s.className="head";s.textContent=d;cal.appendChild(s)});const first=(new Date(y,m,1).getDay()+6)%7,days=new Date(y,m+1,0).getDate();for(let i=0;i<first;i++)cal.appendChild(document.createElement("span"));for(let d=1;d<=days;d++){const s=document.createElement("span");s.textContent=String(d);if(d===now.getDate())s.className="today";cal.appendChild(s)} }
-  function bindNavigation(){ document.querySelectorAll(".nav-item").forEach(btn=>btn.addEventListener("click",()=>{document.querySelectorAll(".nav-item").forEach(x=>x.classList.toggle("active",x===btn));const label=btn.textContent.trim();$("title-n").textContent=label.replace(/^[^\s]+\s/,"");$("workspace-content").innerHTML=`<div class="hero"><span class="hero-icon">▦</span><div><h3>${label}</h3><p>Dieses Modul ist in der Expert-Shell registriert. Die Fachfunktion wird iterativ hinter derselben stabilen Modulgrenze ergänzt.</p></div></div>`;log(`Modul ${label} geöffnet.`)}));$("focus-workspace").addEventListener("click",()=>toggleFocus(true));$("exit-focus").addEventListener("click",()=>toggleFocus(false));document.addEventListener("keydown",e=>{if(e.key==="Escape"&&document.body.classList.contains("focus-mode"))toggleFocus(false)}); }
-  function toggleFocus(on){document.body.classList.toggle("focus-mode",on);$("exit-focus").classList.toggle("hidden",!on)}
-  function bindQuickActions(){document.querySelectorAll("[data-url]").forEach(b=>b.addEventListener("click",()=>window.open(b.dataset.url,"_blank","noopener")))}
-  function bindNotes(){const note=$("quick-note");note.value=saved("quickNote","");let timer;note.addEventListener("input",()=>{clearTimeout(timer);$("note-state").textContent="Speichert …";timer=setTimeout(()=>{persist("quickNote",note.value);$("note-state").textContent="Gespeichert ✓"},350)})}
-  async function refreshBootstrap(){const r=await fetch("/api/bootstrap",{cache:"no-store"});state.bootstrap=await r.json();renderBootstrap();return state.bootstrap}
-  function renderBootstrap(){const b=state.bootstrap;if(!b)return;$("app-version").textContent=`v${b.version}`;$("profile-name").textContent=b.profile?.name||"Lokaler Nutzer";const p=b.project;$("project-name").textContent=p?.configured?(p.name||"Projekt"):"Nicht eingerichtet";$("project-path").textContent=p?.path||"Noch kein Projektordner";if(p?.available){$("system-status").textContent="Betriebsbereit";$("health-badge").textContent="🟢 Betriebsbereit"}else{$("system-status").textContent="Projekt einrichten";$("health-badge").textContent="🟡 Einrichtung";$("health-badge").classList.remove("success")}}
-  function bindProject(){const dlg=$("project-dialog");$("setup-project").addEventListener("click",()=>dlg.showModal());$("pick-project-base").addEventListener("click",async()=>{try{const r=await fetch("/api/project/pick-base");const d=await r.json();if(r.ok&&d.path)$("project-input-base").value=d.path;else if(d.fallback)$("project-input-base").value=d.fallback}catch{log("Ordnerauswahl nicht verfügbar.","warn")}});$("create-project").addEventListener("click",async()=>{const box=$("project-error");box.classList.add("hidden");try{const r=await fetch("/api/project/create",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({base_path:$("project-input-base").value,name:$("project-input-name").value})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Projekt konnte nicht angelegt werden.");dlg.close();await refreshBootstrap();log("Projekt sicher angelegt und validiert.","ok")}catch(e){box.textContent=e.message;box.classList.remove("hidden");log(e.message,"error")}})}
-  function bindQuickSave(){const save=async()=>{const title=$("save-title").value,text=$("save-text").value;if(!title.trim()||!text.trim()){$("save-state").textContent="Titel und Eingabe werden benötigt.";return}$("save-state").textContent="Speichert …";try{const r=await fetch("/api/quick-save",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({title,text})});const d=await r.json();if(!r.ok)throw new Error(d.error||"Speichern fehlgeschlagen.");$("save-text").value="";$("save-state").textContent=`Gespeichert ✓ · ${d.path}`;log("Schnellspeicher-Eintrag geschrieben.","ok")}catch(e){$("save-state").textContent=e.message;log(e.message,"error")}};$("save-button").addEventListener("click",save);$("save-text").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();save()}})}
-  async function loadHelp(){try{const r=await fetch("/static/help.json");state.help=await r.json();const root=$("help-content");root.replaceChildren();state.help.sections.forEach(s=>{const sec=document.createElement("section"),h=document.createElement("h3"),p=document.createElement("p");h.textContent=s.title;p.textContent=s.text;sec.append(h,p);root.appendChild(sec)})}catch{$("help-content").textContent="Hilfe konnte nicht geladen werden."}}
-  function bindHelp(){const dlg=$("help-dialog");$("help-button").addEventListener("click",()=>dlg.showModal());$("close-help").addEventListener("click",()=>dlg.close())}
-  async function init(){applyPreferences();bindPreferences();renderCalendar();bindNavigation();bindQuickActions();bindNotes();bindProject();bindQuickSave();bindHelp();await loadHelp()}
-  return {init,refreshBootstrap,renderBootstrap,log,state};
+
+  const log = (message, kind = "info") => {
+    const icon = kind === "ok" ? "🟢" : kind === "warn" ? "🟡" : kind === "error" ? "🔴" : "🔵";
+    const row = document.createElement("span");
+    row.textContent = `${icon} ${message}`;
+    $("log-list").prepend(row);
+  };
+
+  function applyPreferences() {
+    const theme = saved("theme", "carbon");
+    const complexity = saved("complexity", "laie");
+    const font = saved("fontScale", "100");
+    document.documentElement.dataset.theme = theme;
+    document.documentElement.dataset.complexity = complexity;
+    document.documentElement.style.setProperty("--font-scale", String(Number(font) / 100));
+    $("theme-select").value = theme;
+    $("complexity-select").value = complexity;
+    $("font-scale").value = font;
+    $("font-value").value = `${font}%`;
+  }
+
+  function bindPreferences() {
+    $("theme-select").addEventListener("change", (event) => {
+      document.documentElement.dataset.theme = event.target.value;
+      persist("theme", event.target.value);
+      log(`Theme ${event.target.options[event.target.selectedIndex].text} aktiviert.`, "ok");
+    });
+    $("complexity-select").addEventListener("change", (event) => {
+      document.documentElement.dataset.complexity = event.target.value;
+      persist("complexity", event.target.value);
+      log(`Bedienstufe ${event.target.options[event.target.selectedIndex].text} aktiviert.`, "ok");
+    });
+    $("font-scale").addEventListener("input", (event) => {
+      const value = event.target.value;
+      document.documentElement.style.setProperty("--font-scale", String(Number(value) / 100));
+      $("font-value").value = `${value}%`;
+      persist("fontScale", value);
+    });
+  }
+
+  function showWorkspace(title, content) {
+    $("title-n").textContent = title;
+    const root = $("workspace-content");
+    root.replaceChildren();
+    if (content instanceof Node) root.appendChild(content);
+    else {
+      const p = document.createElement("p");
+      p.textContent = String(content ?? "");
+      root.appendChild(p);
+    }
+  }
+
+  function genericWorkspace(label) {
+    const hero = document.createElement("div"); hero.className = "hero";
+    const icon = document.createElement("span"); icon.className = "hero-icon"; icon.textContent = "▦";
+    const body = document.createElement("div");
+    const h = document.createElement("h3"); h.textContent = label;
+    const p = document.createElement("p"); p.textContent = "Dieses Modul ist registriert. Fachfunktionen werden hinter derselben stabilen Modulgrenze ergänzt.";
+    body.append(h, p); hero.append(icon, body); showWorkspace(label.replace(/^[^\s]+\s/, ""), hero);
+  }
+
+  function bindNavigation() {
+    document.querySelectorAll(".nav-item").forEach((btn) => btn.addEventListener("click", () => {
+      document.querySelectorAll(".nav-item").forEach((item) => item.classList.toggle("active", item === btn));
+      if (btn.dataset.module === "todo" && window.DataUI) window.DataUI.openTodoWorkspace();
+      else genericWorkspace(btn.textContent.trim());
+      log(`Modul ${btn.textContent.trim()} geöffnet.`);
+    }));
+    $("focus-workspace").addEventListener("click", () => toggleFocus(true));
+    $("exit-focus").addEventListener("click", () => toggleFocus(false));
+    document.addEventListener("keydown", (event) => { if (event.key === "Escape" && document.body.classList.contains("focus-mode")) toggleFocus(false); });
+  }
+
+  function toggleFocus(on) { document.body.classList.toggle("focus-mode", on); $("exit-focus").classList.toggle("hidden", !on); }
+  function bindQuickActions() { document.querySelectorAll("[data-url]").forEach((button) => button.addEventListener("click", () => window.open(button.dataset.url, "_blank", "noopener"))); }
+
+  function bindNotes() {
+    const note = $("quick-note"); note.value = saved("quickNote", ""); let timer;
+    note.addEventListener("input", () => {
+      clearTimeout(timer); $("note-state").textContent = "Speichert …";
+      timer = setTimeout(() => { persist("quickNote", note.value); $("note-state").textContent = "Gespeichert ✓"; }, 350);
+    });
+  }
+
+  async function refreshBootstrap() {
+    const response = await fetch("/api/bootstrap", { cache: "no-store" });
+    state.bootstrap = await response.json(); renderBootstrap(); return state.bootstrap;
+  }
+
+  function renderBootstrap() {
+    const bootstrap = state.bootstrap; if (!bootstrap) return;
+    $("app-version").textContent = `v${bootstrap.version}`;
+    $("profile-name").textContent = bootstrap.profile?.name || "Lokaler Nutzer";
+    const project = bootstrap.project;
+    $("project-name").textContent = project?.configured ? (project.name || "Projekt") : "Nicht eingerichtet";
+    $("project-path").textContent = project?.path || "Noch kein Projektordner";
+    const badge = $("health-badge");
+    if (project?.available) { $("system-status").textContent = "Betriebsbereit"; badge.textContent = "🟢 Betriebsbereit"; badge.classList.add("success"); }
+    else { $("system-status").textContent = "Projekt einrichten"; badge.textContent = "🟡 Einrichtung"; badge.classList.remove("success"); }
+  }
+
+  function bindProject() {
+    const dialog = $("project-dialog");
+    $("setup-project").addEventListener("click", () => dialog.showModal());
+    $("pick-project-base").addEventListener("click", async () => {
+      try { const response = await fetch("/api/project/pick-base"); const data = await response.json(); if (response.ok && data.path) $("project-input-base").value = data.path; else if (data.fallback) $("project-input-base").value = data.fallback; }
+      catch { log("Ordnerauswahl nicht verfügbar.", "warn"); }
+    });
+    $("create-project").addEventListener("click", async () => {
+      const box = $("project-error"); box.classList.add("hidden");
+      try {
+        const response = await fetch("/api/project/create", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ base_path: $("project-input-base").value, name: $("project-input-name").value }) });
+        const data = await response.json(); if (!response.ok) throw new Error(data.error || "Projekt konnte nicht angelegt werden.");
+        dialog.close(); await refreshBootstrap(); await window.DataUI?.refreshAll(); log("Projekt sicher angelegt, Datenkern initialisiert und validiert.", "ok");
+      } catch (error) { box.textContent = error.message; box.classList.remove("hidden"); log(error.message, "error"); }
+    });
+  }
+
+  function bindQuickSave() {
+    const save = async () => {
+      const title = $("save-title").value, text = $("save-text").value;
+      if (!title.trim() || !text.trim()) { $("save-state").textContent = "Titel und Eingabe werden benötigt."; return; }
+      $("save-state").textContent = "Speichert …";
+      try {
+        const response = await fetch("/api/quick-save", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ title, text }) });
+        const data = await response.json(); if (!response.ok) throw new Error(data.error || "Speichern fehlgeschlagen.");
+        $("save-text").value = ""; $("save-state").textContent = `Gespeichert ✓ · ${data.path}`; log("Schnellspeicher-Eintrag geschrieben.", "ok");
+      } catch (error) { $("save-state").textContent = error.message; log(error.message, "error"); }
+    };
+    $("save-button").addEventListener("click", save);
+    $("save-text").addEventListener("keydown", (event) => { if (event.key === "Enter" && !event.shiftKey) { event.preventDefault(); save(); } });
+  }
+
+  async function loadHelp() {
+    try {
+      const response = await fetch("/static/help.json"); state.help = await response.json(); const root = $("help-content"); root.replaceChildren();
+      state.help.sections.forEach((section) => { const item = document.createElement("section"), h = document.createElement("h3"), p = document.createElement("p"); h.textContent = section.title; p.textContent = section.text; item.append(h, p); root.appendChild(item); });
+    } catch { $("help-content").textContent = "Hilfe konnte nicht geladen werden."; }
+  }
+
+  function bindHelp() { const dialog = $("help-dialog"); $("help-button").addEventListener("click", () => dialog.showModal()); $("close-help").addEventListener("click", () => dialog.close()); }
+  async function init() { applyPreferences(); bindPreferences(); bindNavigation(); bindQuickActions(); bindNotes(); bindProject(); bindQuickSave(); bindHelp(); await loadHelp(); if (window.DataUI) window.DataUI.init(); }
+  return { init, refreshBootstrap, renderBootstrap, log, showWorkspace, state };
 })();
-window.addEventListener("DOMContentLoaded",()=>App.init());
+window.addEventListener("DOMContentLoaded", () => App.init());

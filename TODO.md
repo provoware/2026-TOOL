@@ -24,24 +24,36 @@
 10. [x] vollständigen Iterationsdiff durch unabhängiges GitHub-Release-Gate prüfen.
 11. [x] Analyse-, Plan- und Plan-Prüfer-Gates für den vollständigen Diff bestanden.
 
-## 🔵 Iteration 2.1 – Reliability & Self-Repair v0.2.1
-1. [ ] AGENTS.md v2 mit Risikoklassen, Trigger-Matrix, Self-Repair-Grenzen und Freigaberegeln.
-2. [ ] Analyse-, Risiko-, Fehlerursachen-, Plan-, Regressions-, Plan-Prüfer- und Release-Prüfer-Rollen sauber trennen.
-3. [ ] maschinenlesbare Agentenvertragsprüfung statt einfacher Text-Greps.
-4. [ ] zentrale sichere Self-Repair-Schicht mit Allowlist/Denylist.
-5. [ ] beschädigte Konfiguration nur aus verifizierter `.bak1`/`.bak2` restaurieren und Original quarantänisieren.
-6. [ ] Projektmarker strikt validieren; fremde/ungültige Projektordner niemals automatisch übernehmen.
-7. [ ] fehlende Standardordner nur in validierten PROVOWARE-Projekten selbst reparieren.
-8. [ ] SQLite-Recovery über bestehenden verifizierenden Datenkern integrieren.
-9. [ ] Self-Repair-Status/Run als lokale API und Startprüfung integrieren.
-10. [ ] Regressionstests für Konfig-Recovery, Kollisionen, Fremdordnerschutz, Quarantäne, API und Agentenverträge.
-11. [ ] Manifest, Hilfe, Architektur, Qualitätsdoku, Changelog und Projektstatus synchronisieren.
-12. [ ] vollständigen finalen Branch-Head und danach `main` automatisch validieren.
+## 🟢 Iteration 2.1 – Reliability & Self-Repair v0.2.1
+1. [x] AGENTS.md v2 mit Risikoklassen, Trigger-Matrix, Self-Repair-Grenzen und Freigaberegeln.
+2. [x] Analyse-, Risiko-, Fehlerursachen-, Plan-, Regressions-, Plan-Prüfer- und Release-Prüfer-Rollen sauber trennen.
+3. [x] maschinenlesbare Agentenvertragsprüfung statt einfacher Text-Greps.
+4. [x] zentrale sichere Self-Repair-Schicht mit Allowlist/Denylist.
+5. [x] beschädigte Konfiguration nur aus verifizierter Rückfallkopie restaurieren und Original quarantänisieren.
+6. [x] Projektmarker strikt validieren; fremde/ungültige Projektordner niemals automatisch übernehmen.
+7. [x] fehlende Standardordner nur in validierten PROVOWARE-Projekten selbst reparieren.
+8. [x] SQLite-Recovery über bestehenden verifizierenden Datenkern integrieren.
+9. [x] Self-Repair-Status/Run als lokale API und Startprüfung integrieren.
+10. [x] Regressionstests für Konfig-Recovery, Kollisionen, Fremdordnerschutz, Quarantäne, API und Agentenverträge.
+11. [x] Manifest, Hilfe, Architektur, Qualitätsdoku, Changelog und Projektstatus synchronisieren.
+12. [x] vollständigen Branch-Head validiert und über PR #4 nach `main` gemergt.
+
+## 🔵 Iteration 2.2 – UX, Feedback & Transparenz
+1. [ ] zentrales wiederverwendbares Feedback-/Prozesssystem.
+2. [ ] permanente kompakte Prozessleiste ohne Layoutsprünge.
+3. [ ] Warnungs-/Fehlerzähler und wichtige ARIA-Live-Rückmeldungen.
+4. [ ] einheitliche Busy-Zustände gegen Doppelklick/Doppelausführung.
+5. [ ] Zoom 100–200 % plus `Ctrl++`, `Ctrl+-`, `Ctrl+0` und `Ctrl+Mausrad`.
+6. [ ] Skip-Link, Fokusführung und größere Standard-Aktionsziele.
+7. [ ] Projekt, Self-Repair, Schnellspeicher und Todo an gemeinsames Feedback anbinden.
+8. [ ] Hilfe um Status-/Prozessmodell ergänzen.
+9. [ ] `docs/UX_STANDARD.md` und UX-Vertragstests ergänzen.
+10. [ ] vollständige Regression und sieben Agenten-Gates bestehen.
 
 ## Danach – nächste Fachausbaustufe
+- Download-/Dateisortier-Workflow als erster unmittelbar produktiver Laien-Workflow.
 - DB-Eingabemaske C als dynamisches Schema-/Formularsystem auf demselben Datenkern.
 - globale Suche H über Todo, Notizen, Schnellspeicher und spätere DB-Inhalte.
-- Organisationsbereich F weiter ausbauen, ohne Statistikduplikate zu erzeugen.
 
 ## Qualitätsregel
 Vor Umsetzung zuerst Analyse und dokumentierter Plan. Umsetzung danach automatisch validieren; Plan-Prüfer kontrolliert Abweichungen. Nutzer ist Anwender und nicht reguläre Test- oder Abnahmeinstanz.

@@ -18,7 +18,7 @@
 ## 🟢 Iteration 3 – Jobmanager & reversibles Aktionsjournal v0.3.0
 - [x] Jobmanager, Checkpoint/Resume, Watchdog, Aktionsjournal, Undo-Vertrag, 57 Tests, PR-/main-Gates und reale Snapshotrotation vollständig freigegeben.
 
-## 🟡 Iteration 4 – Read-only Sortier-Analyse & Vorschau v0.4.0
+## 🟢 Iteration 4 – Read-only Sortier-Analyse & Vorschau v0.4.0 — FROZEN
 1. [x] verbindlichen R3-Plan vor Implementierung angelegt.
 2. [x] Scanner-/Regel-Engine als getrennten read-only Service angelegt.
 3. [x] persistente, zeilenweise Scan-Ergebnisse in derselben Projekt-SQLite implementiert; erstmalige Feature-Schemaanlage wird vorher verifiziert gesichert.
@@ -36,7 +36,9 @@
 15. [x] globale Prozessanzeige mit Scanstatus, Dateien, Volumen, Pause/Weiter/Abbruch, Konflikten und Überspringgründen verbunden.
 16. [x] Manifest, Changelog, README, Projektstatus, Architektur, Hilfe, Qualitätssicherung und Testübersicht synchronisiert.
 17. [x] Release-Paketierung ergänzt und Paket-/RC-Head mit 77 Tests, 17 Release-Stufen, ZIP-Integrität/SHA-256 und allen sieben Subagent-Gates vollständig bestanden; letzter `released`-Metadatenhead wird vor Merge erneut identisch geprüft.
-18. [ ] Squash-Merge auf unverändertem geprüftem Head; danach dieselben Gates auf `main`, reale Snapshotrotation und finales main-ZIP prüfen.
+18. [x] PR #13 nach `main` gemergt; aktueller `main`-Head `e921508fb7a0df160f229a8b3de9dd6a1ee79010` wurde mit Release-Gate, sieben Subagent-Gates und Snapshot-Backup erfolgreich nachvalidiert. Finales v0.4.0-Artefakt wurde erneut auf ZIP-Struktur, Manifest-Commit und SHA-256 geprüft.
+
+**Freeze:** v0.4.0 ist abgeschlossen. Änderungen am eingefrorenen Funktionsumfang nur noch als ausdrücklich versionierte Hotfix-/Folgeiteration mit vollständigem Gate.
 
 ## Danach – sicherer Datei-Executor
 1. [ ] Zielordner und Konfliktstrategie ausschließlich nach erfolgreicher Vorschau freigeben.

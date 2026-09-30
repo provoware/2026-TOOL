@@ -4,9 +4,9 @@
 **v0.4.0 – Read-only Sortier-Analyse & Vorschau**
 
 ## Status
-🟢 **Release-Stand – Funktion, Paketierung und vollständiger PR-Prüfpfad sind nachgewiesen.**
+🟢 **ABGESCHLOSSEN / FROZEN – v0.4.0 ist vollständig freigegeben und nachvalidiert.**
 
-Manifest, Serverkennung, HTTP-Header und Versionsregressionen sind auf v0.4.0 synchronisiert. Der Release-Status ist `released`. Vor dem Squash-Merge wird der unveränderte letzte Metadaten-Head nochmals vollständig geprüft; nach dem Merge folgen dieselben Gates auf `main`, Snapshotrotation und Downloadprüfung des dort erzeugten ZIPs.
+Manifest, Serverkennung, HTTP-Header und Versionsregressionen sind auf v0.4.0 synchronisiert. Der Release-Status ist `released`. PR #13 wurde am 12.09.2026 nach `main` gemergt. Der aktuelle `main`-Head `e921508fb7a0df160f229a8b3de9dd6a1ee79010` bestand am 25.09.2026 Release-Gate, Subagent-Gates und Snapshot-Backup. Das daraus erzeugte v0.4.0-Artefakt wurde am 30.09.2026 erneut auf ZIP-Struktur, eingebetteten Commit und SHA-256 geprüft. Der Funktionsstand v0.4.0 ist damit eingefroren.
 
 ## Funktionsumfang v0.4.0
 - verbindlicher R3-Plan vor Implementierung,
@@ -49,12 +49,16 @@ Paket-/RC-Head `3bbc32baf78f8363b63315957d6b4303ee20ec80`:
 
 Der erste Scanner-Zwischenlauf fand einen Fehler ausschließlich im Test-Doppelgänger für `os.scandir()`. Die Produktlogik wurde nicht geändert; der Test wurde an den echten Iteratorvertrag angepasst und der vollständige Prüfpfad danach erfolgreich wiederholt.
 
-## Letzte Freigabeschritte
-1. exakt den letzten `released`-PR-Head erneut über alle 17 Release-Stufen, Paketbau und sieben Subagent-Gates prüfen,
-2. Draft-Status entfernen,
-3. Squash-Merge nur mit exakt diesem geprüften Head,
-4. Release-Gate, Subagent-Gates und Snapshot-Backup auf dem neuen `main` prüfen,
-5. finales Nutzer-ZIP aus dem `main`-Workflow herunterladen und erneut auf ZIP-Integrität, Commit und SHA-256 prüfen.
+## Abschluss-/Freeze-Nachweis
+- PR #13: 🟢 gemergt.
+- aktueller `main`-Head `e921508fb7a0df160f229a8b3de9dd6a1ee79010`: 🟢 nachvalidiert.
+- Release-Gate Run 88 (`36186258181`): 🟢 erfolgreich.
+- Subagent-Gates Run 86 (`36186258353`): 🟢 erfolgreich.
+- Snapshot-Backup Run 18 (`36186258264`): 🟢 erfolgreich.
+- Actions-Artefakt `PROVOWARE-HEADQUARTER-v0.4.0`: 🟢 vorhanden und erneut geprüft.
+- SHA-256 des inneren Nutzer-ZIP: `de82cc281b8565a45c3e929b641c3dd38003c47fa52785f5621b0f1bf9b603f5`.
+
+**Freeze-Regel:** Der freigegebene Funktionsumfang von v0.4.0 wird nicht still verändert. Weitere Produktänderungen beginnen als neue, versionierte Iteration; notwendige Hotfixes erhalten eigene Regression und vollständige Release-Gates.
 
 ## Vorheriger Hauptstand
 Der `main`-Stand vor v0.4.0 ist Commit `76c7d0a28d7a93391de860fc16ced706223dfbd8`.
